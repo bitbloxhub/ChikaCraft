@@ -1,0 +1,24 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Thu, 26 Jan 2023 10:52:42 -0800
+Subject: [PATCH] Chika config files
+
+
+diff --git a/src/main/java/org/bukkit/Server.java b/src/main/java/org/bukkit/Server.java
+index e0f69edf603c2ec99bc92b16b18912272cc41bd9..8fcf586f89f5a241523a8c9930ba3fdf2a514ac0 100644
+--- a/src/main/java/org/bukkit/Server.java
++++ b/src/main/java/org/bukkit/Server.java
+@@ -1983,6 +1983,13 @@ public interface Server extends PluginMessageRecipient, net.kyori.adventure.audi
+         }
+         // Purpur end
+ 
++        // Chika start
++        @NotNull
++        public org.bukkit.configuration.file.YamlConfiguration getChikaConfig() {
++            throw new UnsupportedOperationException("Not supported yet.");
++        }
++        // Chika end
++
+         /**
+          * Sends the component to the player
+          *
