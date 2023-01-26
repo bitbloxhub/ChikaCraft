@@ -1,0 +1,55 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Thu, 26 Jan 2023 12:57:17 -0800
+Subject: [PATCH] Vanilla Parity Config Patches
+
+
+diff --git a/build.gradle.kts b/build.gradle.kts
+index f2f10df1e92bbba45f4e8521044dd9f6074929e3..5909df033f6b164c3c0308dbc3b3c686dc2a16a6 100644
+--- a/build.gradle.kts
++++ b/build.gradle.kts
+@@ -7,7 +7,7 @@ plugins {
+ }
+ 
+ dependencies {
+-    implementation(project(":tentacles-api")) // Purpur // Tentacles
++    implementation(project(":chika-api")) // Purpur // Chika
+     // Pufferfish start
+     implementation("io.papermc.paper:paper-mojangapi:1.19.3-R0.1-SNAPSHOT") {
+         exclude("io.papermc.paper", "paper-api")
+diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+index 6bf14183a3fcd2b3d166752ce33240d2ff1ffa7c..23ac155358921f313e41bd3209c40035e644915a 100644
+--- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
++++ b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
+@@ -146,14 +146,14 @@ public class GlobalConfiguration extends ConfigurationPart {
+ 
+     public class UnsupportedSettings extends ConfigurationPart {
+         @Comment("This setting controls if players should be able to break bedrock, end portals and other intended to be permanent blocks.")
+-        public boolean allowPermanentBlockBreakExploits = false;
++        public boolean allowPermanentBlockBreakExploits = true; // Chika
+         @Comment("This setting controls if player should be able to use TNT duplication, but this also allows duplicating carpet, rails and potentially other items")
+-        public boolean allowPistonDuplication = false;
++        public boolean allowPistonDuplication = true; // Chika
+         public boolean performUsernameValidation = true;
+         @Comment("This setting controls if players should be able to create headless pistons.")
+-        public boolean allowHeadlessPistons = false;
++        public boolean allowHeadlessPistons = true; // Chika
+         @Comment("This setting controls if grindstones should be able to output overstacked items (such as cursed books).")
+-        public boolean allowGrindstoneOverstacking = false;
++        public boolean allowGrindstoneOverstacking = true; // Chika
+     }
+ 
+     public Commands commands;
+diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+index 9c18acf824ea4d364e31cdee94a4bff2e21bcd0f..b72187237d8b4a7b90d88ec1ff86d35269b62789 100644
+--- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
++++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
+@@ -11,7 +11,7 @@ public final class Versioning {
+     public static String getBukkitVersion() {
+         String result = "Unknown-Version";
+ 
+-        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/org.purpurmc.tentacles/tentacles-api/pom.properties"); // Purpur // Tentacles
++        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/chikacraft/chika-api/pom.properties"); // Purpur // Chika
+         Properties properties = new Properties();
+ 
+         if (stream != null) {

@@ -1,0 +1,123 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Thu, 26 Jan 2023 13:08:05 -0800
+Subject: [PATCH] Fix Gravity Block Duping
+
+
+diff --git a/src/main/java/net/minecraft/world/entity/Entity.java b/src/main/java/net/minecraft/world/entity/Entity.java
+index 1ae7ef3d94d4d3d8413a5419eeb9fadad89d2f8d..5549dd128f14a94539002ec15d593fd77bcf429f 100644
+--- a/src/main/java/net/minecraft/world/entity/Entity.java
++++ b/src/main/java/net/minecraft/world/entity/Entity.java
+@@ -540,36 +540,7 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+         return chunkMap.playerEntityTrackerTrackMaps[type.ordinal()].getObjectsInRange(MCUtil.getCoordinateKey(this));
+     }
+     // Paper end - optimise entity tracking
+-    // Paper start - make end portalling safe
+-    public BlockPos portalBlock;
+-    public ServerLevel portalWorld;
+-    public void tickEndPortal() {
+-        BlockPos pos = this.portalBlock;
+-        ServerLevel world = this.portalWorld;
+-        this.portalBlock = null;
+-        this.portalWorld = null;
+-
+-        if (pos == null || world == null || world != this.level) {
+-            return;
+-        }
+-
+-        if (this.isPassenger() || this.isVehicle() || !this.canChangeDimensions() || this.isRemoved() || !this.valid || !this.isAlive()) {
+-            return;
+-        }
+-
+-        ResourceKey<Level> resourcekey = world.getTypeKey() == LevelStem.END ? Level.OVERWORLD : Level.END; // CraftBukkit - SPIGOT-6152: send back to main overworld in custom ends
+-        ServerLevel worldserver = world.getServer().getLevel(resourcekey);
+-
+-        org.bukkit.event.entity.EntityPortalEnterEvent event = new org.bukkit.event.entity.EntityPortalEnterEvent(this.getBukkitEntity(), new org.bukkit.Location(world.getWorld(), pos.getX(), pos.getY(), pos.getZ()));
+-        event.callEvent();
+-
+-        if (this instanceof ServerPlayer) {
+-            ((ServerPlayer)this).changeDimension(worldserver, PlayerTeleportEvent.TeleportCause.END_PORTAL);
+-            return;
+-        }
+-        this.teleportTo(worldserver, null);
+-    }
+-    // Paper end - make end portalling safe
++    // Chika - fix gravity block duper
+ 
+     public Entity(EntityType<?> type, Level world) {
+         this.id = Entity.ENTITY_COUNTER.incrementAndGet();
+@@ -2990,7 +2961,7 @@ public abstract class Entity implements Nameable, EntityAccess, CommandSource {
+             }
+ 
+             this.processPortalCooldown();
+-            if (this.level.purpurConfig.endPortalSafeTeleporting) this.tickEndPortal(); // Paper - make end portalling safe // Purpur
++            // Paper - make end portalling safe // Purpur // Chika - fix gravity block duper
+         }
+     }
+ 
+diff --git a/src/main/java/net/minecraft/world/entity/item/FallingBlockEntity.java b/src/main/java/net/minecraft/world/entity/item/FallingBlockEntity.java
+index 39d06a704d2ddee0010ba2686c703f21640da998..006dc7196c7caa2f3046e16131df3eaec352c34c 100644
+--- a/src/main/java/net/minecraft/world/entity/item/FallingBlockEntity.java
++++ b/src/main/java/net/minecraft/world/entity/item/FallingBlockEntity.java
+@@ -63,7 +63,7 @@ public class FallingBlockEntity extends Entity {
+     @Nullable
+     public CompoundTag blockData;
+     protected static final EntityDataAccessor<BlockPos> DATA_START_POS = SynchedEntityData.defineId(FallingBlockEntity.class, EntityDataSerializers.BLOCK_POS);
+-    public boolean autoExpire = true; // Paper - Auto expire setting
++    public boolean autoExpire = false; // Paper - Auto expire setting // Chika - fix it
+ 
+     public FallingBlockEntity(EntityType<? extends FallingBlockEntity> type, Level world) {
+         super(type, world);
+@@ -129,11 +129,7 @@ public class FallingBlockEntity extends Entity {
+ 
+     @Override
+     public void tick() {
+-        // Paper start - fix sand duping
+-        if (this.level.purpurConfig.fixSandDuping && this.isRemoved()) { // Purpur
+-            return;
+-        }
+-        // Paper end - fix sand duping
++        // Chika - fix gravity block duper
+         if (this.blockState.isAir()) {
+             this.discard();
+         } else {
+@@ -146,11 +142,7 @@ public class FallingBlockEntity extends Entity {
+ 
+             this.move(MoverType.SELF, this.getDeltaMovement());
+ 
+-            // Paper start - fix sand duping
+-            if (this.level.purpurConfig.fixSandDuping && this.isRemoved()) { // Purpur
+-                return;
+-            }
+-            // Paper end - fix sand duping
++            // Chika - fix gravity block duper
+ 
+             // Paper start - Configurable EntityFallingBlock height nerf
+             if (this.level.paperConfig().fixes.fallingBlockHeightNerf.test(v -> this.getY() > v)) {
+diff --git a/src/main/java/net/minecraft/world/level/block/EndPortalBlock.java b/src/main/java/net/minecraft/world/level/block/EndPortalBlock.java
+index e7658fa9806701505e15cbf1d28ea3bd2ed6f113..a3357f869b38e3fdd95b59410c694d3f3dbc06d0 100644
+--- a/src/main/java/net/minecraft/world/level/block/EndPortalBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/EndPortalBlock.java
+@@ -77,10 +77,18 @@ public class EndPortalBlock extends BaseEntityBlock {
+             }
+             // Purpur end
+ 
+-            // Paper start - move all of this logic into portal tick
+-            entity.portalWorld = ((ServerLevel)world);
+-            entity.portalBlock = pos.immutable();
+-            // Paper end - move all of this logic into portal tick
++            // Chika start - fix gravity block duper
++            // CraftBukkit start - Entity in portal
++            EntityPortalEnterEvent event = new EntityPortalEnterEvent(entity.getBukkitEntity(), new org.bukkit.Location(world.getWorld(), pos.getX(), pos.getY(), pos.getZ()));
++            world.getCraftServer().getPluginManager().callEvent(event);
++
++            if (entity instanceof ServerPlayer) {
++                ((ServerPlayer) entity).changeDimension(worldserver, PlayerTeleportEvent.TeleportCause.END_PORTAL);
++                return;
++            }
++            // CraftBukkit end
++            entity.changeDimension(worldserver);
++            // Chika end - fix gravity block duper
+         }
+ 
+     }
