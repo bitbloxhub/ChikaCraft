@@ -4,19 +4,6 @@ Date: Thu, 26 Jan 2023 12:57:17 -0800
 Subject: [PATCH] Vanilla Parity Config Patches
 
 
-diff --git a/build.gradle.kts b/build.gradle.kts
-index f2f10df1e92bbba45f4e8521044dd9f6074929e3..5909df033f6b164c3c0308dbc3b3c686dc2a16a6 100644
---- a/build.gradle.kts
-+++ b/build.gradle.kts
-@@ -7,7 +7,7 @@ plugins {
- }
- 
- dependencies {
--    implementation(project(":tentacles-api")) // Purpur // Tentacles
-+    implementation(project(":chika-api")) // Purpur // Chika
-     // Pufferfish start
-     implementation("io.papermc.paper:paper-mojangapi:1.19.3-R0.1-SNAPSHOT") {
-         exclude("io.papermc.paper", "paper-api")
 diff --git a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java b/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
 index 6bf14183a3fcd2b3d166752ce33240d2ff1ffa7c..23ac155358921f313e41bd3209c40035e644915a 100644
 --- a/src/main/java/io/papermc/paper/configuration/GlobalConfiguration.java
@@ -40,19 +27,19 @@ index 6bf14183a3fcd2b3d166752ce33240d2ff1ffa7c..23ac155358921f313e41bd3209c40035
      }
  
      public Commands commands;
-diff --git a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-index 9c18acf824ea4d364e31cdee94a4bff2e21bcd0f..b72187237d8b4a7b90d88ec1ff86d35269b62789 100644
---- a/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-+++ b/src/main/java/org/bukkit/craftbukkit/util/Versioning.java
-@@ -11,7 +11,7 @@ public final class Versioning {
-     public static String getBukkitVersion() {
-         String result = "Unknown-Version";
- 
--        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/org.purpurmc.tentacles/tentacles-api/pom.properties"); // Purpur // Tentacles
-+        InputStream stream = Bukkit.class.getClassLoader().getResourceAsStream("META-INF/maven/chikacraft/chika-api/pom.properties"); // Purpur // Chika
-         Properties properties = new Properties();
- 
-         if (stream != null) {
+diff --git a/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java b/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java
+index 4532f3a0d74feae0a1249b53e1bfbc18a8808b32..3cd881d308c3f34665409921e16f83b52babbd67 100644
+--- a/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java
++++ b/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java
+@@ -460,7 +460,7 @@ public class WorldConfiguration extends ConfigurationPart {
+         public int lightQueueSize = 20;
+         public boolean updatePathfindingOnBlockUpdate = true;
+         public boolean showSignClickCommandFailureMsgsToPlayer = false;
+-        public RedstoneImplementation redstoneImplementation = RedstoneImplementation.VANILLA;
++        public RedstoneImplementation redstoneImplementation = RedstoneImplementation.ALTERNATE_CURRENT;
+         public boolean disableEndCredits = false;
+         public float maxLeashDistance = 10f;
+         public boolean disableSprintInterruptionOnAttack = false;
 diff --git a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
 index 4cd080a0db99a5c36394bcf54526b96fe22a206a..c100047bc68c15feee0d5f8be1738909d1fdc22c 100644
 --- a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java

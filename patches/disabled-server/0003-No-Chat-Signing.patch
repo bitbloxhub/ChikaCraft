@@ -5,7 +5,7 @@ Subject: [PATCH] No Chat Signing
 
 
 diff --git a/src/main/java/io/papermc/paper/adventure/ChatProcessor.java b/src/main/java/io/papermc/paper/adventure/ChatProcessor.java
-index 309fe1162db195c7c3c94d785d6aa2700e42b08a..f497c06d4802286ff3679fea4464ab43910a9b1a 100644
+index 309fe1162db195c7c3c94d785d6aa2700e42b08a..e23228193c7051c888aa1a1497bbb40a6e3c5e92 100644
 --- a/src/main/java/io/papermc/paper/adventure/ChatProcessor.java
 +++ b/src/main/java/io/papermc/paper/adventure/ChatProcessor.java
 @@ -352,7 +352,7 @@ public final class ChatProcessor {
@@ -13,7 +13,7 @@ index 309fe1162db195c7c3c94d785d6aa2700e42b08a..f497c06d4802286ff3679fea4464ab43
          private void sendToServer(final ChatType.Bound chatType, final @Nullable Function<Audience, net.minecraft.network.chat.Component> msgFunction) {
              final PlayerChatMessage toConsoleMessage = msgFunction == null ? ChatProcessor.this.message : ChatProcessor.this.message.withUnsignedContent(msgFunction.apply(ChatProcessor.this.server.console));
 -            ChatProcessor.this.server.logChatMessage(toConsoleMessage.decoratedContent(), chatType, ChatProcessor.this.server.getPlayerList().verifyChatTrusted(toConsoleMessage) ? null : "Not Secure");
-+            ChatProcessor.this.server.logChatMessage(toConsoleMessage.decoratedContent(), chatType, ChatProcessor.this.server.getPlayerList().verifyChatTrusted(toConsoleMessage) || null); // Chika - no "Not Secure"
++            ChatProcessor.this.server.logChatMessage(toConsoleMessage.decoratedContent(), chatType, null); // Chika - no "Not Secure"
          }
      }
  
@@ -91,10 +91,10 @@ index 46858fb57f122033a68aeb4ad3943132a677fb46..e27454621c9a15493db5e78eb851d5d5
  
      protected boolean convertOldUsers() {
 diff --git a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-index a8e205af936efe0909c94575e3b7f8ca50cead2f..dbeeac9d02706f081c9eab6f1ad3230671c65ed7 100644
+index a8e205af936efe0909c94575e3b7f8ca50cead2f..48d2f9ca82c5898ede4d41489d2ce93cea17d48d 100644
 --- a/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
 +++ b/src/main/java/net/minecraft/server/network/ServerGamePacketListenerImpl.java
-@@ -2231,10 +2231,22 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
+@@ -2231,10 +2231,23 @@ public class ServerGamePacketListenerImpl implements ServerPlayerConnection, Tic
  
      @Override
      public void send(Packet<?> packet) {
@@ -103,6 +103,7 @@ index a8e205af936efe0909c94575e3b7f8ca50cead2f..dbeeac9d02706f081c9eab6f1ad32306
 +            packet = new ClientboundSystemChatPacket(chat.chatType().resolve(this.player.level.registryAccess())
 +            .get().decorate(chat.unsignedContent() != null ? chat.unsignedContent()
 +                : Component.literal(chat.body().content())), false);
++        }
 +        // Chika end - no ClientboundPlayerChatHeaderPacket and rebuild ClientboundPlayerChatPacket
          this.send(packet, (PacketSendListener) null);
      }

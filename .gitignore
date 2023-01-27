@@ -50,6 +50,7 @@ manifest.mf
 
 # other stuff
 run/
+!run/eula.txt
 
 build-data/
 Chika-API
