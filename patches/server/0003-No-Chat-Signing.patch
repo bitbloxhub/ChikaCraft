@@ -17,21 +17,41 @@ index 309fe1162db195c7c3c94d785d6aa2700e42b08a..f497c06d4802286ff3679fea4464ab43
          }
      }
  
-diff --git a/src/main/java/net/minecraft/network/chat/MessageSignature.java b/src/main/java/net/minecraft/network/chat/MessageSignature.java
-index e2812cdce3b1170b7b7d0f52209e8b4fd2b64c61..5b1f0605ad351540d72c18390f02a7b035244352 100644
---- a/src/main/java/net/minecraft/network/chat/MessageSignature.java
-+++ b/src/main/java/net/minecraft/network/chat/MessageSignature.java
-@@ -22,9 +22,7 @@ public record MessageSignature(byte[] bytes) {
+diff --git a/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java b/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java
+index 72a8aa676836fcb3b4578689d16af65e18f55bbe..a0bc6ad9ac33fd1bf828a06ce26c98256e10b176 100644
+--- a/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java
++++ b/src/main/java/net/minecraft/commands/arguments/ArgumentSignatures.java
+@@ -14,7 +14,7 @@ public record ArgumentSignatures(List<ArgumentSignatures.Entry> entries) {
+     private static final int MAX_ARGUMENT_NAME_LENGTH = 16;
+ 
+     public ArgumentSignatures(FriendlyByteBuf buf) {
+-        this(buf.readCollection(FriendlyByteBuf.limitValue(ArrayList::new, 8), ArgumentSignatures.Entry::new));
++        this(List.of());
      }
  
-     public static MessageSignature read(FriendlyByteBuf buf) {
--        byte[] bs = new byte[256];
--        buf.readBytes(bs);
--        return new MessageSignature(bs);
+     @Nullable
+diff --git a/src/main/java/net/minecraft/network/protocol/game/ServerboundChatPacket.java b/src/main/java/net/minecraft/network/protocol/game/ServerboundChatPacket.java
+index d1d2fc0c57523c1abf1e8bfec913c78927c3dafc..a59167817124223b9ef92d27bb12f82910d5633c 100644
+--- a/src/main/java/net/minecraft/network/protocol/game/ServerboundChatPacket.java
++++ b/src/main/java/net/minecraft/network/protocol/game/ServerboundChatPacket.java
+@@ -9,7 +9,7 @@ import net.minecraft.network.protocol.Packet;
+ 
+ public record ServerboundChatPacket(String message, Instant timeStamp, long salt, @Nullable MessageSignature signature, LastSeenMessages.Update lastSeenMessages) implements Packet<ServerGamePacketListener> {
+     public ServerboundChatPacket(FriendlyByteBuf buf) {
+-        this(buf.readUtf(256), buf.readInstant(), buf.readLong(), buf.readNullable(MessageSignature::read), new LastSeenMessages.Update(buf));
++        this(buf.readUtf(256), buf.readInstant(), buf.readLong(), buf.readNullable(ServerboundChatPacket::readSign), new LastSeenMessages.Update(buf));
+     }
+ 
+     @Override
+@@ -25,4 +25,8 @@ public record ServerboundChatPacket(String message, Instant timeStamp, long salt
+     public void handle(ServerGamePacketListener listener) {
+         listener.handleChat(this);
+     }
++
++    private static MessageSignature readSign(FriendlyByteBuf buf) {
 +        return null;
-     }
- 
-     public static void write(FriendlyByteBuf buf, MessageSignature signature) {
++    }
+ }
 diff --git a/src/main/java/net/minecraft/network/protocol/game/ServerboundChatSessionUpdatePacket.java b/src/main/java/net/minecraft/network/protocol/game/ServerboundChatSessionUpdatePacket.java
 index 9d6db4a378036559efab91c8b7dcf2a6b0c2cce6..0fe55f6e74760b925c1d57e460c7556a2f30be87 100644
 --- a/src/main/java/net/minecraft/network/protocol/game/ServerboundChatSessionUpdatePacket.java

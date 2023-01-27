@@ -53,3 +53,25 @@ index 9c18acf824ea4d364e31cdee94a4bff2e21bcd0f..b72187237d8b4a7b90d88ec1ff86d352
          Properties properties = new Properties();
  
          if (stream != null) {
+diff --git a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
+index 4cd080a0db99a5c36394bcf54526b96fe22a206a..c100047bc68c15feee0d5f8be1738909d1fdc22c 100644
+--- a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
++++ b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
+@@ -924,7 +924,7 @@ public class PurpurWorldConfig {
+         furnaceUseLavaFromUnderneath = getBoolean("blocks.furnace.use-lava-from-underneath", furnaceUseLavaFromUnderneath);
+     }
+ 
+-    public boolean endPortalSafeTeleporting = true;
++    public boolean endPortalSafeTeleporting = false;
+     private void endPortalSettings() {
+         endPortalSafeTeleporting = getBoolean("blocks.end_portal.safe-teleporting", endPortalSafeTeleporting);
+     }
+@@ -992,7 +992,7 @@ public class PurpurWorldConfig {
+         }
+     }
+ 
+-    public boolean fixSandDuping = true;
++    public boolean fixSandDuping = false;
+     private void sandSettings() {
+         fixSandDuping = getBoolean("blocks.sand.fix-duping", fixSandDuping);
+     }
