@@ -1,0 +1,303 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Sun, 29 Jan 2023 13:31:59 -0800
+Subject: [PATCH] Chika Config
+
+
+diff --git a/src/main/java/chikacraft/ChikaConfig.java b/src/main/java/chikacraft/ChikaConfig.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..7fc4c28e8dfde6f241919ae332e3def229bf7a34
+--- /dev/null
++++ b/src/main/java/chikacraft/ChikaConfig.java
+@@ -0,0 +1,136 @@
++package chikacraft;
++
++import com.google.common.base.Throwables;
++import com.google.common.collect.ImmutableMap;
++import org.bukkit.Bukkit;
++import org.bukkit.configuration.ConfigurationSection;
++import org.bukkit.configuration.InvalidConfigurationException;
++import org.bukkit.configuration.file.YamlConfiguration;
++
++import java.io.File;
++import java.io.IOException;
++import java.lang.reflect.InvocationTargetException;
++import java.lang.reflect.Method;
++import java.lang.reflect.Modifier;
++import java.util.ArrayList;
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.HashSet;
++import java.util.List;
++import java.util.Map;
++import java.util.Set;
++import java.util.logging.Level;
++
++@SuppressWarnings("unused")
++public class ChikaConfig {
++    private static final String HEADER = "Configuration file for ChikaCraft.\n";
++    private static File CONFIG_FILE;
++    public static YamlConfiguration config;
++
++    public static int version;
++    static boolean verbose;
++
++    public static void init(File configFile) {
++        CONFIG_FILE = configFile;
++        config = new YamlConfiguration();
++        try {
++            config.load(CONFIG_FILE);
++        } catch (IOException ignore) {
++        } catch (InvalidConfigurationException ex) {
++            Bukkit.getLogger().log(Level.SEVERE, "Could not load chika.yml, please correct your syntax errors", ex);
++            throw Throwables.propagate(ex);
++        }
++        config.options().header(HEADER);
++        config.options().copyDefaults(true);
++        verbose = getBoolean("verbose", false);
++
++        version = getInt("config-version", 1);
++        set("config-version", 1);
++
++        readConfig(ChikaConfig.class, null);
++    }
++
++    protected static void log(String s) {
++        if (verbose) {
++            log(Level.INFO, s);
++        }
++    }
++
++    protected static void log(Level level, String s) {
++        Bukkit.getLogger().log(level, s);
++    }
++
++    static void readConfig(Class<?> clazz, Object instance) {
++        for (Method method : clazz.getDeclaredMethods()) {
++            if (Modifier.isPrivate(method.getModifiers())) {
++                if (method.getParameterTypes().length == 0 && method.getReturnType() == Void.TYPE) {
++                    try {
++                        method.setAccessible(true);
++                        method.invoke(instance);
++                    } catch (InvocationTargetException ex) {
++                        throw Throwables.propagate(ex.getCause());
++                    } catch (Exception ex) {
++                        Bukkit.getLogger().log(Level.SEVERE, "Error invoking " + method, ex);
++                    }
++                }
++            }
++        }
++
++        try {
++            config.save(CONFIG_FILE);
++        } catch (IOException ex) {
++            Bukkit.getLogger().log(Level.SEVERE, "Could not save " + CONFIG_FILE, ex);
++        }
++    }
++
++    private static void set(String path, Object val) {
++        config.addDefault(path, val);
++        config.set(path, val);
++    }
++
++    private static String getString(String path, String def) {
++        config.addDefault(path, def);
++        return config.getString(path, config.getString(path));
++    }
++
++    private static boolean getBoolean(String path, boolean def) {
++        config.addDefault(path, def);
++        return config.getBoolean(path, config.getBoolean(path));
++    }
++
++    private static double getDouble(String path, double def) {
++        config.addDefault(path, def);
++        return config.getDouble(path, config.getDouble(path));
++    }
++
++    private static int getInt(String path, int def) {
++        config.addDefault(path, def);
++        return config.getInt(path, config.getInt(path));
++    }
++
++    private static <T> List getList(String path, T def) {
++        config.addDefault(path, def);
++        return config.getList(path, config.getList(path));
++    }
++
++    static Map<String, Object> getMap(String path, Map<String, Object> def) {
++        if (def != null && config.getConfigurationSection(path) == null) {
++            config.addDefault(path, def);
++            return def;
++        }
++        return toMap(config.getConfigurationSection(path));
++    }
++
++    private static Map<String, Object> toMap(ConfigurationSection section) {
++        ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
++        if (section != null) {
++            for (String key : section.getKeys(false)) {
++                Object obj = section.get(key);
++                if (obj != null) {
++                    builder.put(key, obj instanceof ConfigurationSection val ? toMap(val) : obj);
++                }
++            }
++        }
++        return builder.build();
++    }
++}
+\ No newline at end of file
+diff --git a/src/main/java/chikacraft/ChikaWorldConfig.java b/src/main/java/chikacraft/ChikaWorldConfig.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..7551dba635666c0027eeedf1ccb9a417d381ba75
+--- /dev/null
++++ b/src/main/java/chikacraft/ChikaWorldConfig.java
+@@ -0,0 +1,91 @@
++package chikacraft;
++
++import net.minecraft.core.registries.BuiltInRegistries;
++import net.minecraft.resources.ResourceLocation;
++import net.minecraft.util.Mth;
++import net.minecraft.world.entity.Entity;
++import net.minecraft.world.entity.EntityType;
++import net.minecraft.world.item.Item;
++import net.minecraft.world.item.Items;
++import net.minecraft.world.level.block.Block;
++import net.minecraft.world.level.block.Blocks;
++import org.apache.commons.lang.BooleanUtils;
++import org.bukkit.ChatColor;
++import org.bukkit.World;
++import org.bukkit.configuration.ConfigurationSection;
++import java.util.ArrayList;
++import java.util.HashMap;
++import java.util.List;
++import java.util.Locale;
++import java.util.Map;
++import java.util.function.Predicate;
++import java.util.logging.Level;
++import chikacraft.ChikaConfig;
++
++@SuppressWarnings("unused")
++public class ChikaWorldConfig {
++
++    private final String worldName;
++    private final World.Environment environment;
++
++    public ChikaWorldConfig(String worldName, World.Environment environment) {
++        this.worldName = worldName;
++        this.environment = environment;
++        init();
++    }
++
++    public void init() {
++        ChikaConfig.readConfig(ChikaWorldConfig.class, this);
++    }
++
++    private void set(String path, Object val) {
++        ChikaConfig.config.addDefault("world-settings.default." + path, val);
++        ChikaConfig.config.set("world-settings.default." + path, val);
++        if (ChikaConfig.config.get("world-settings." + worldName + "." + path) != null) {
++            ChikaConfig.config.addDefault("world-settings." + worldName + "." + path, val);
++            ChikaConfig.config.set("world-settings." + worldName + "." + path, val);
++        }
++    }
++
++    private ConfigurationSection getConfigurationSection(String path) {
++        ConfigurationSection section = ChikaConfig.config.getConfigurationSection("world-settings." + worldName + "." + path);
++        return section != null ? section : ChikaConfig.config.getConfigurationSection("world-settings.default." + path);
++    }
++
++    private String getString(String path, String def) {
++        ChikaConfig.config.addDefault("world-settings.default." + path, def);
++        return ChikaConfig.config.getString("world-settings." + worldName + "." + path, ChikaConfig.config.getString("world-settings.default." + path));
++    }
++
++    private boolean getBoolean(String path, boolean def) {
++        ChikaConfig.config.addDefault("world-settings.default." + path, def);
++        return ChikaConfig.config.getBoolean("world-settings." + worldName + "." + path, ChikaConfig.config.getBoolean("world-settings.default." + path));
++    }
++
++    private boolean getBoolean(String path, Predicate<Boolean> predicate) {
++        String val = getString(path, "default").toLowerCase();
++        Boolean bool = BooleanUtils.toBooleanObject(val, "true", "false", "default");
++        return predicate.test(bool);
++    }
++
++    private double getDouble(String path, double def) {
++        ChikaConfig.config.addDefault("world-settings.default." + path, def);
++        return ChikaConfig.config.getDouble("world-settings." + worldName + "." + path, ChikaConfig.config.getDouble("world-settings.default." + path));
++    }
++
++    private int getInt(String path, int def) {
++        ChikaConfig.config.addDefault("world-settings.default." + path, def);
++        return ChikaConfig.config.getInt("world-settings." + worldName + "." + path, ChikaConfig.config.getInt("world-settings.default." + path));
++    }
++
++    private <T> List<?> getList(String path, T def) {
++        ChikaConfig.config.addDefault("world-settings.default." + path, def);
++        return ChikaConfig.config.getList("world-settings." + worldName + "." + path, ChikaConfig.config.getList("world-settings.default." + path));
++    }
++
++    private Map<String, Object> getMap(String path, Map<String, Object> def) {
++        final Map<String, Object> fallback = ChikaConfig.getMap("world-settings.default." + path, def);
++        final Map<String, Object> value = ChikaConfig.getMap("world-settings." + worldName + "." + path, null);
++        return value.isEmpty() ? fallback : value;
++    }
++}
+diff --git a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
+index 46858fb57f122033a68aeb4ad3943132a677fb46..fc766fa41e1ea5d6294982163303c624ac9da900 100644
+--- a/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
++++ b/src/main/java/net/minecraft/server/dedicated/DedicatedServer.java
+@@ -227,6 +227,14 @@ public class DedicatedServer extends MinecraftServer implements ServerInterface
+         }
+         org.purpurmc.purpur.PurpurConfig.registerCommands();
+         // Purpur end
++        // Chika Start
++        try {
++            chikacraft.ChikaConfig.init((java.io.File) options.valueOf("chika-settings"));
++        } catch (Exception e) {
++            DedicatedServer.LOGGER.error("Unable to load server configuration", e);
++            return false;
++        }
++        // Chika End
+         com.destroystokyo.paper.VersionHistoryManager.INSTANCE.getClass(); // load version history now
+         io.papermc.paper.brigadier.PaperBrigadierProviderImpl.INSTANCE.getClass(); // init PaperBrigadierProvider
+         // Paper end
+diff --git a/src/main/java/net/minecraft/world/level/Level.java b/src/main/java/net/minecraft/world/level/Level.java
+index a9289072b048095330ea32d7c965e8dda61a36fc..20c2621a83f016af2be5380bf869936129f5f6bb 100644
+--- a/src/main/java/net/minecraft/world/level/Level.java
++++ b/src/main/java/net/minecraft/world/level/Level.java
+@@ -174,6 +174,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
+ 
+     public final com.destroystokyo.paper.antixray.ChunkPacketBlockController chunkPacketBlockController; // Paper - Anti-Xray
+     public final org.purpurmc.purpur.PurpurWorldConfig purpurConfig; // Purpur
++    public final chikacraft.ChikaWorldConfig chikaConfig; // Chika
+ 
+     public final co.aikar.timings.WorldTimingsHandler timings; // Paper
+     public static BlockPos lastPhysicsProblem; // Spigot
+@@ -330,6 +331,7 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
+         this.spigotConfig = new org.spigotmc.SpigotWorldConfig(((net.minecraft.world.level.storage.PrimaryLevelData) worlddatamutable).getLevelName()); // Spigot
+         this.paperConfig = paperWorldConfigCreator.apply(this.spigotConfig); // Paper
+         this.purpurConfig = new org.purpurmc.purpur.PurpurWorldConfig(((net.minecraft.world.level.storage.PrimaryLevelData) worlddatamutable).getLevelName(), env); // Purpur
++        this.chikaConfig = new chikacraft.ChikaWorldConfig(((net.minecraft.world.level.storage.PrimaryLevelData) worlddatamutable).getLevelName(), env); // Chika
+         this.playerBreedingCooldowns = this.getNewBreedingCooldownCache(); // Purpur
+         this.generator = gen;
+         this.world = new CraftWorld((ServerLevel) this, gen, biomeProvider, env);
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index 576cd8e20982bb20d10213b6c7a229428eec1c2f..4e7779dc0f65a9adc6397008ca5739becafa0441 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -179,6 +179,13 @@ public class Main {
+                         .defaultsTo(new File("pufferfish.yml"))
+                         .describedAs("Yml file");
+                 // Purpur end
++                // Chika start
++                acceptsAll(asList("chika", "chika-settings"), "File for chikacraft settings")
++                    .withRequiredArg()
++                    .ofType(File.class)
++                    .defaultsTo(new File("chika.yml"))
++                    .describedAs("Yml file");
++                // Chika end
+ 
+                 // Paper start
+                 acceptsAll(asList("server-name"), "Name of the server")
