@@ -159,7 +159,7 @@ index efc1bdcaf141a2c2152173439d707f50feaaf91a..8bb5e820edf6bd43c9cbae304f6717a8
 +    }
  }
 diff --git a/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java b/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
-index f456ad8a74464414f69b616a48ee9a2c1cee4d90..316e55dc742749e59d2ba4f7aa5b886d143054f4 100644
+index f456ad8a74464414f69b616a48ee9a2c1cee4d90..b4fd3d6ff449f4ce11b07ddbd977b23c7e762a93 100644
 --- a/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
 +++ b/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
 @@ -21,6 +21,7 @@ import net.minecraft.world.level.BlockGetter;
@@ -229,20 +229,19 @@ index f456ad8a74464414f69b616a48ee9a2c1cee4d90..316e55dc742749e59d2ba4f7aa5b886d
  
                      return !state.hasBlockEntity();
                  }
-@@ -350,6 +380,25 @@ public class PistonBaseBlock extends DirectionalBlock {
+@@ -350,6 +380,24 @@ public class PistonBaseBlock extends DirectionalBlock {
              List<BlockPos> list = pistonextendschecker.getToPush();
              List<BlockState> list1 = Lists.newArrayList();
  
 +            // Chika start - movable blockentities from carpet
 +            if (world.chikaConfig.mechanicMovableBlockEntities) {
 +                list1_BlockEntities.set(Lists.newArrayList());
-+                for (int i = 0; i < list.size(); ++i)
-+                {
++                System.out.println(list.size());
++                for (int i = 0; i < list.size(); ++i) {
 +                    BlockPos blockpos = list.get(i);
 +                    BlockEntity blockEntity = (list1.get(i).hasBlockEntity()) ? world.getBlockEntity(blockpos) : null;
 +                    list1_BlockEntities.get().add(blockEntity);
-+                    if (blockEntity != null)
-+                    {
++                    if (blockEntity != null) {
 +                        //hopefully this call won't have any side effects in the future, such as dropping all the BlockEntity's items
 +                        //we want to place this same(!) BlockEntity object into the world later when the movement stops again
 +                        world.removeBlockEntity(blockpos);
@@ -255,7 +254,7 @@ index f456ad8a74464414f69b616a48ee9a2c1cee4d90..316e55dc742749e59d2ba4f7aa5b886d
              for (int i = 0; i < list.size(); ++i) {
                  BlockPos blockposition2 = (BlockPos) list.get(i);
                  BlockState iblockdata = world.getBlockState(blockposition2);
-@@ -440,7 +489,13 @@ public class PistonBaseBlock extends DirectionalBlock {
+@@ -440,7 +488,13 @@ public class PistonBaseBlock extends DirectionalBlock {
                      iblockdata1 = world.getBlockState(oldPos);
                      map.replace(oldPos, iblockdata1);
                  }
