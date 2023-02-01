@@ -19,8 +19,147 @@ index 2274c544bae0790ed2ff3ecff931f757d289f75c..ce20a6dce540d161b264e201921a8112
 +        mechanicMovableBlockEntities = getBoolean("settings.mechanics.movableblockentities", mechanicMovableBlockEntities);
      }
  }
+diff --git a/src/main/java/net/minecraft/world/level/Level.java b/src/main/java/net/minecraft/world/level/Level.java
+index 20c2621a83f016af2be5380bf869936129f5f6bb..f5de85f376bf9b7208554f6bffc63ad71d38b258 100644
+--- a/src/main/java/net/minecraft/world/level/Level.java
++++ b/src/main/java/net/minecraft/world/level/Level.java
+@@ -53,7 +53,9 @@ import net.minecraft.world.level.biome.BiomeManager;
+ import net.minecraft.world.level.block.BaseFireBlock;
+ import net.minecraft.world.level.block.Block;
+ import net.minecraft.world.level.block.Blocks;
++import net.minecraft.world.level.block.EntityBlock;
+ import net.minecraft.world.level.block.entity.BlockEntity;
++import net.minecraft.world.level.block.entity.LidBlockEntity;
+ import net.minecraft.world.level.block.entity.TickingBlockEntity;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.border.BorderChangeListener;
+@@ -1694,4 +1696,61 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
+         return getWorld().getEnvironment() == org.bukkit.World.Environment.THE_END;
+     }
+     // Purpur end
++
++    // Chika start - movable blockentities from carpet
++    public boolean setBlockStateWithBlockEntity(BlockPos blockPos_1, BlockState blockState_1, BlockEntity newBlockEntity, int int_1) {
++        if (isOutsideBuildHeight(blockPos_1) || !this.isClientSide && isDebug()) return false;
++        LevelChunk worldChunk_1 = this.getChunkAt(blockPos_1);
++        Block block_1 = blockState_1.getBlock();
++
++        BlockState blockState_2;
++        if (newBlockEntity != null && block_1 instanceof EntityBlock) {
++            blockState_2 = (worldChunk_1).setBlockStateWithBlockEntity(blockPos_1, blockState_1, newBlockEntity, (int_1 & 64) != 0);
++            if (newBlockEntity instanceof LidBlockEntity) {
++                scheduleTick(blockPos_1, block_1, 5);
++            }
++        } else {
++            blockState_2 = worldChunk_1.setBlockState(blockPos_1, blockState_1, (int_1 & 64) != 0);
++        }
++
++        if (blockState_2 == null) {
++            return false;
++        } else {
++            BlockState blockState_3 = this.getBlockState(blockPos_1);
++
++            if (blockState_3 != blockState_2 && (blockState_3.getLightBlock((BlockGetter) this, blockPos_1) != blockState_2.getLightBlock((BlockGetter) this, blockPos_1) || blockState_3.getLightEmission() != blockState_2.getLightEmission() || blockState_3.useShapeForLightOcclusion() || blockState_2.useShapeForLightOcclusion())) {
++                ProfilerFiller profiler = getProfiler();
++                profiler.push("queueCheckLight");
++                this.getChunkSource().getLightEngine().checkBlock(blockPos_1);
++                profiler.pop();
++            }
++
++            if (blockState_3 == blockState_1) {
++                if (blockState_2 != blockState_3) {
++                    this.setBlocksDirty(blockPos_1, blockState_2, blockState_3);
++                }
++
++                if ((int_1 & 2) != 0 && (!this.isClientSide || (int_1 & 4) == 0) && (this.isClientSide || worldChunk_1.getFullStatus() != null && worldChunk_1.getFullStatus().isOrAfter(ChunkHolder.FullChunkStatus.TICKING))) {
++                    this.sendBlockUpdated(blockPos_1, blockState_2, blockState_1, int_1);
++                }
++
++                if (!this.isClientSide && (int_1 & 1) != 0) {
++                    this.updateNeighborsAt(blockPos_1, blockState_2.getBlock());
++                    if (blockState_1.hasAnalogOutputSignal()) {
++                        updateNeighbourForOutputSignal(blockPos_1, block_1);
++                    }
++                }
++
++                if ((int_1 & 16) == 0) {
++                    int int_2 = int_1 & -34;
++                    blockState_2.updateIndirectNeighbourShapes(this, blockPos_1, int_2); // prepare
++                    blockState_1.updateNeighbourShapes(this, blockPos_1, int_2); // updateNeighbours
++                    blockState_1.updateIndirectNeighbourShapes(this, blockPos_1, int_2); // prepare
++                }
++                this.onBlockStateChange(blockPos_1, blockState_2, blockState_3);
++            }
++            return true;
++        }
++    }
++    // Chika end
+ }
+diff --git a/src/main/java/net/minecraft/world/level/block/ChestBlock.java b/src/main/java/net/minecraft/world/level/block/ChestBlock.java
+index 330ff3bc5fd8625e37b79e1204eddbe88de62c03..f1fb3ac1d40af53e9d8e120aa10157695f7284f8 100644
+--- a/src/main/java/net/minecraft/world/level/block/ChestBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/ChestBlock.java
+@@ -423,4 +423,35 @@ public class ChestBlock extends AbstractChestBlock<ChestBlockEntity> implements
+         }
+ 
+     }
++
++    // Chika start - movable blockentities from carpet
++    public boolean isSticky(BlockState state) {
++        return true; // i guess?
++    }
++
++    public boolean isStickyToNeighbor(Level level, BlockPos pos, BlockState state, BlockPos neighborPos, BlockState neighborState, Direction dir, Direction moveDir) {
++        if (!level.chikaConfig.mechanicMovableBlockEntities) {
++            return false;
++        }
++        
++        if (!neighborState.is((Block)(Object)this)) {
++            return false;
++        }
++
++        ChestType type = state.getValue(ChestBlock.TYPE);
++        ChestType neighborType = neighborState.getValue(ChestBlock.TYPE);
++
++        if (type == ChestType.SINGLE || neighborType == ChestType.SINGLE) {
++            return false;
++        }
++        if (type != neighborType.getOpposite()) {
++            return false;
++        }
++
++        Direction facing = state.getValue(ChestBlock.FACING);
++        Direction neighborFacing = state.getValue(ChestBlock.FACING);
++
++        return facing == neighborFacing;
++    }
++    // Chika end
+ }
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
+index efc1bdcaf141a2c2152173439d707f50feaaf91a..8bb5e820edf6bd43c9cbae304f6717a8101ef7d4 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
+@@ -40,7 +40,7 @@ public abstract class BlockEntity {
+     private final BlockEntityType<?> type;
+     @Nullable
+     protected Level level;
+-    protected final BlockPos worldPosition;
++    protected BlockPos worldPosition; // Chika - movable blockentities from carpet
+     protected boolean remove;
+     private BlockState blockState;
+ 
+@@ -317,4 +317,9 @@ public abstract class BlockEntity {
+         return this.persistentLore;
+     }
+     // Purpur end
++
++    // Chika - movable blockentities from carpet
++    public void setCMPos(BlockPos newPos) {
++        worldPosition = newPos;
++    }
+ }
 diff --git a/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java b/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
-index f456ad8a74464414f69b616a48ee9a2c1cee4d90..2b41d1a88abf871dc59f22993115f45d69fffedc 100644
+index f456ad8a74464414f69b616a48ee9a2c1cee4d90..316e55dc742749e59d2ba4f7aa5b886d143054f4 100644
 --- a/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
 +++ b/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
 @@ -21,6 +21,7 @@ import net.minecraft.world.level.BlockGetter;
@@ -44,7 +183,7 @@ index f456ad8a74464414f69b616a48ee9a2c1cee4d90..2b41d1a88abf871dc59f22993115f45d
              // Paper end
              world.setBlock(pos, iblockdata1, 20);
 -            world.setBlockEntity(MovingPistonBlock.newMovingBlockEntity(pos, iblockdata1, (BlockState) this.defaultBlockState().setValue(PistonBaseBlock.FACING, Direction.from3DDataValue(data & 7)), enumdirection, false, true)); // Paper - diff on change
-+            world.setBlockEntity(/*MovingPistonBlock.newMovingBlockEntity(pos, iblockdata1, (BlockState) this.defaultBlockState().setValue(PistonBaseBlock.FACING, Direction.from3DDataValue(data & 7)), enumdirection, false, true)*/ null /* i think */); // Paper - diff on change
++            world.setBlockEntity(MovingPistonBlock.newMovingBlockEntity(pos, iblockdata1, (BlockState) this.defaultBlockState().setValue(PistonBaseBlock.FACING, Direction.from3DDataValue(data & 7)), enumdirection, false, true) /* null / * i think * / */); // Paper - diff on change
              world.blockUpdated(pos, iblockdata1.getBlock());
              iblockdata1.updateNeighbourShapes(world, pos, 2);
              if (this.isSticky) {
@@ -287,3 +426,128 @@ index 221c5d080d55326e458c1182823d6b49224ef498..9cfe9859bc799b8c8062040f4217ebae
      }
  
      public VoxelShape getCollisionShape(BlockGetter world, BlockPos pos) {
+diff --git a/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java b/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
+index 79bf9c277fe98df176113de39360fb34ad917577..2a50cbf270e0d8de5d31117870c44c1f7f52fd5b 100644
+--- a/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
++++ b/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
+@@ -40,6 +40,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
+ import net.minecraft.world.level.block.entity.BlockEntityTicker;
+ import net.minecraft.world.level.block.entity.BlockEntityType;
+ import net.minecraft.world.level.block.entity.TickingBlockEntity;
++import net.minecraft.world.level.block.piston.MovingPistonBlock;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.gameevent.EuclideanGameEventListenerRegistry;
+ import net.minecraft.world.level.gameevent.GameEventListener;
+@@ -558,6 +559,103 @@ public class LevelChunk extends ChunkAccess {
+          */  // Paper - remove try catch
+     }
+ 
++    // Chika start - movable blockentities from carpet
++    private BlockEntity ifGetBlockEntity(LevelChunk worldChunk, BlockPos blockPos_1, LevelChunk.EntityCreationType worldChunk$CreationType_1) {
++        if (!this.level.chikaConfig.mechanicMovableBlockEntities) {
++            return this.getBlockEntity(blockPos_1, LevelChunk.EntityCreationType.CHECK);
++        }
++        else {
++            return this.level.getBlockEntity(blockPos_1);
++        }
++    }
++
++    public BlockState setBlockStateWithBlockEntity(BlockPos blockPos_1, BlockState newBlockState, BlockEntity newBlockEntity, boolean boolean_1) {
++        int x = blockPos_1.getX() & 15;
++        int y = blockPos_1.getY();
++        int z = blockPos_1.getZ() & 15;
++        LevelChunkSection chunkSection = this.getSection(this.getSectionIndex(y));
++        if (chunkSection.hasOnlyAir())
++        {
++            if (newBlockState.isAir())
++            {
++                return null;
++            }
++        }
++        
++        boolean boolean_2 = chunkSection.hasOnlyAir();
++        BlockState oldBlockState = chunkSection.setBlockState(x, y & 15, z, newBlockState);
++        if (oldBlockState == newBlockState)
++        {
++            return null;
++        }
++        else
++        {
++            Block newBlock = newBlockState.getBlock();
++            Block oldBlock = oldBlockState.getBlock();
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING)).update(x, y, z, newBlockState);
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES)).update(x, y, z, newBlockState);
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR)).update(x, y, z, newBlockState);
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.WORLD_SURFACE)).update(x, y, z, newBlockState);
++            boolean boolean_3 = chunkSection.hasOnlyAir();
++            if (boolean_2 != boolean_3)
++            {
++                this.level.getChunkSource().getLightEngine().updateSectionStatus(blockPos_1, boolean_3);
++            }
++            
++            if (!this.level.isClientSide)
++            {
++                if (!(oldBlock instanceof MovingPistonBlock))//this is a movableTE special case, if condition wasn't there it would remove the blockentity that was carried for some reason
++                    oldBlockState.onRemove(this.level, blockPos_1, newBlockState, boolean_1);//this kills it
++            }
++            else if (oldBlock != newBlock && oldBlock instanceof EntityBlock)
++            {
++                this.level.removeBlockEntity(blockPos_1);
++            }
++            
++            if (chunkSection.getBlockState(x, y & 15, z).getBlock() != newBlock)
++            {
++                return null;
++            }
++            else
++            {
++                BlockEntity oldBlockEntity = null;
++                if (oldBlockState.hasBlockEntity())
++                {
++                    oldBlockEntity = this.getBlockEntity(blockPos_1, LevelChunk.EntityCreationType.CHECK);
++                    if (oldBlockEntity != null)
++                    {
++                        oldBlockEntity.setBlockState(oldBlockState);
++                        updateBlockEntityTicker(oldBlockEntity);
++                    }
++                }
++
++                if (oldBlockState.hasBlockEntity())
++                {
++                    if (newBlockEntity == null)
++                    {
++                        newBlockEntity = ((EntityBlock) newBlock).newBlockEntity(blockPos_1, newBlockState);
++                    }
++                    if (newBlockEntity != oldBlockEntity && newBlockEntity != null)
++                    {
++                        newBlockEntity.clearRemoved();
++                        this.level.setBlockEntity(newBlockEntity);
++                        newBlockEntity.setBlockState(newBlockState);
++                        updateBlockEntityTicker(newBlockEntity);
++                    }
++                }
++
++                if (!this.level.isClientSide)
++                {
++                    newBlockState.onPlace(this.level, blockPos_1, oldBlockState, boolean_1); //This can call setblockstate! (e.g. hopper does)
++                }
++                
++                this.unsaved = true; // shouldSave
++                return oldBlockState;
++            }
++        }
++    }
++    // Chika end 
++
+     // CraftBukkit start
+     @Nullable
+     @Override
+@@ -612,7 +710,7 @@ public class LevelChunk extends ChunkAccess {
+                     }
+ 
+                     if (iblockdata.hasBlockEntity()) {
+-                        BlockEntity tileentity = this.getBlockEntity(blockposition, LevelChunk.EntityCreationType.CHECK);
++                        BlockEntity tileentity = ifGetBlockEntity(this, blockposition, LevelChunk.EntityCreationType.CHECK); // Chika - movable blockentities from carpet
+ 
+                         if (tileentity == null) {
+                             tileentity = ((EntityBlock) block).newBlockEntity(blockposition, iblockdata);
