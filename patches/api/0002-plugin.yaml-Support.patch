@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Fri, 3 Feb 2023 12:42:48 -0800
+Subject: [PATCH] plugin.yaml Support
+
+down with yml
+
+you dont compile .jva files into .cls files, so why are yaml files .yml? because people arent smart, duh.
+
+diff --git a/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java b/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
+index d7ac5d5bb6180f97706be9c5ef25956f244bc376..8ea6db102acb4933f04359d1080c8e3199884f95 100644
+--- a/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
++++ b/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
+@@ -175,10 +175,15 @@ public final class JavaPluginLoader implements PluginLoader {
+         try {
+             jar = new JarFile(file);
+             JarEntry entry = jar.getJarEntry("plugin.yml");
+-
++            
++            // Chika start - plugin.yaml
+             if (entry == null) {
+-                throw new InvalidDescriptionException(new FileNotFoundException("Jar does not contain plugin.yml"));
++                entry = jar.getJarEntry("plugin.yaml");
++                if (entry == null) {
++                    throw new InvalidDescriptionException(new FileNotFoundException("Jar does not contain plugin.y(a)ml"));
++                }
+             }
++            // Chika end
+ 
+             stream = jar.getInputStream(entry);
+ 
