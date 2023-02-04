@@ -6,7 +6,7 @@ Subject: [PATCH] Chika Config
 
 diff --git a/src/main/java/chikacraft/ChikaConfig.java b/src/main/java/chikacraft/ChikaConfig.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..7fc4c28e8dfde6f241919ae332e3def229bf7a34
+index 0000000000000000000000000000000000000000..bd4e897421a36c528b1c81c080cca7c8ec579f17
 --- /dev/null
 +++ b/src/main/java/chikacraft/ChikaConfig.java
 @@ -0,0 +1,136 @@
@@ -49,7 +49,7 @@ index 0000000000000000000000000000000000000000..7fc4c28e8dfde6f241919ae332e3def2
 +            config.load(CONFIG_FILE);
 +        } catch (IOException ignore) {
 +        } catch (InvalidConfigurationException ex) {
-+            Bukkit.getLogger().log(Level.SEVERE, "Could not load chika.yml, please correct your syntax errors", ex);
++            Bukkit.getLogger().log(Level.SEVERE, "Could not load chika.yaml, please correct your syntax errors", ex);
 +            throw Throwables.propagate(ex);
 +        }
 +        config.options().header(HEADER);
@@ -284,19 +284,63 @@ index a9289072b048095330ea32d7c965e8dda61a36fc..20c2621a83f016af2be5380bf8699361
          this.generator = gen;
          this.world = new CraftWorld((ServerLevel) this, gen, biomeProvider, env);
 diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
-index 576cd8e20982bb20d10213b6c7a229428eec1c2f..4e7779dc0f65a9adc6397008ca5739becafa0441 100644
+index 576cd8e20982bb20d10213b6c7a229428eec1c2f..d5c96078da4e86c202cac2b1bb75ae2a1e250141 100644
 --- a/src/main/java/org/bukkit/craftbukkit/Main.java
 +++ b/src/main/java/org/bukkit/craftbukkit/Main.java
-@@ -179,6 +179,13 @@ public class Main {
+@@ -117,13 +117,13 @@ public class Main {
+                         .withRequiredArg()
+                         .ofType(File.class)
+                         .defaultsTo(new File("bukkit.yml"))
+-                        .describedAs("Yml file");
++                        .describedAs("Yaml file");
+ 
+                 acceptsAll(Main.asList("C", "commands-settings"), "File for command settings")
+                         .withRequiredArg()
+                         .ofType(File.class)
+                         .defaultsTo(new File("commands.yml"))
+-                        .describedAs("Yml file");
++                        .describedAs("Yaml file");
+ 
+                 acceptsAll(Main.asList("forceUpgrade"), "Whether to force a world upgrade");
+                 acceptsAll(Main.asList("eraseCache"), "Whether to force cache erase during world upgrade");
+@@ -144,7 +144,7 @@ public class Main {
+                         .withRequiredArg()
+                         .ofType(File.class)
+                         .defaultsTo(new File("spigot.yml"))
+-                        .describedAs("Yml file");
++                        .describedAs("Yaml file");
+                 // Spigot End
+ 
+                 // Paper Start
+@@ -157,7 +157,7 @@ public class Main {
+                         .withRequiredArg()
+                         .ofType(File.class)
+                         .defaultsTo(new File("paper.yml"))
+-                        .describedAs("Yml file");
++                        .describedAs("Yaml file");
+ 
+                 acceptsAll(asList("add-plugin", "add-extra-plugin-jar"), "Specify paths to extra plugin jars to be loaded in addition to those in the plugins folder. This argument can be specified multiple times, once for each extra plugin jar path.")
+                         .withRequiredArg()
+@@ -171,14 +171,21 @@ public class Main {
+                     .withRequiredArg()
+                     .ofType(File.class)
+                     .defaultsTo(new File("purpur.yml"))
+-                    .describedAs("Yml file");
++                    .describedAs("Yaml file");
+ 
+                 acceptsAll(asList("pufferfish", "pufferfish-settings"), "File for pufferfish settings")
+                         .withRequiredArg()
+                         .ofType(File.class)
                          .defaultsTo(new File("pufferfish.yml"))
-                         .describedAs("Yml file");
+-                        .describedAs("Yml file");
++                        .describedAs("Yaml file");
                  // Purpur end
 +                // Chika start
 +                acceptsAll(asList("chika", "chika-settings"), "File for chikacraft settings")
 +                    .withRequiredArg()
 +                    .ofType(File.class)
-+                    .defaultsTo(new File("chika.yml"))
-+                    .describedAs("Yml file");
++                    .defaultsTo(new File("chika.yaml"))
++                    .describedAs("Yaml file");
 +                // Chika end
  
                  // Paper start
