@@ -1,4 +1,5 @@
-# ChikaCraft: plugins, vanilla parity, speed. choose any three.
+# ChikaCraft: a fork of purpur with more stuff
 
 ### Credit
 https://github.com/LeavesMC/Leaves/ - some ideas
+https://github.com/gnembon/fabric-carpet - more ideas
