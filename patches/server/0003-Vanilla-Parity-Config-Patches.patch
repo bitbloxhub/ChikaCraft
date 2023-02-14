@@ -28,9 +28,20 @@ index 6bf14183a3fcd2b3d166752ce33240d2ff1ffa7c..23ac155358921f313e41bd3209c40035
  
      public Commands commands;
 diff --git a/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java b/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java
-index 4532f3a0d74feae0a1249b53e1bfbc18a8808b32..3cd881d308c3f34665409921e16f83b52babbd67 100644
+index 4532f3a0d74feae0a1249b53e1bfbc18a8808b32..a7368f053920e9dc438b814efac7c08c3580dda9 100644
 --- a/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java
 +++ b/src/main/java/io/papermc/paper/configuration/WorldConfiguration.java
+@@ -308,8 +308,8 @@ public class WorldConfiguration extends ConfigurationPart {
+     public Scoreboards scoreboards;
+ 
+     public class Scoreboards extends ConfigurationPart {
+-        public boolean allowNonPlayerEntitiesOnScoreboards = false;
+-        public boolean useVanillaWorldScoreboardNameColoring = false;
++        public boolean allowNonPlayerEntitiesOnScoreboards = true;
++        public boolean useVanillaWorldScoreboardNameColoring = true;
+     }
+ 
+     public Environment environment;
 @@ -460,7 +460,7 @@ public class WorldConfiguration extends ConfigurationPart {
          public int lightQueueSize = 20;
          public boolean updatePathfindingOnBlockUpdate = true;
