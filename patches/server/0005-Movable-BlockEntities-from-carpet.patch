@@ -20,7 +20,7 @@ index 2274c544bae0790ed2ff3ecff931f757d289f75c..ce20a6dce540d161b264e201921a8112
      }
  }
 diff --git a/src/main/java/net/minecraft/world/level/Level.java b/src/main/java/net/minecraft/world/level/Level.java
-index 20c2621a83f016af2be5380bf869936129f5f6bb..f5de85f376bf9b7208554f6bffc63ad71d38b258 100644
+index 20c2621a83f016af2be5380bf869936129f5f6bb..0e3ab8debfd879b6351397e4922b85406e724802 100644
 --- a/src/main/java/net/minecraft/world/level/Level.java
 +++ b/src/main/java/net/minecraft/world/level/Level.java
 @@ -53,7 +53,9 @@ import net.minecraft.world.level.biome.BiomeManager;
@@ -60,10 +60,10 @@ index 20c2621a83f016af2be5380bf869936129f5f6bb..f5de85f376bf9b7208554f6bffc63ad7
 +            BlockState blockState_3 = this.getBlockState(blockPos_1);
 +
 +            if (blockState_3 != blockState_2 && (blockState_3.getLightBlock((BlockGetter) this, blockPos_1) != blockState_2.getLightBlock((BlockGetter) this, blockPos_1) || blockState_3.getLightEmission() != blockState_2.getLightEmission() || blockState_3.useShapeForLightOcclusion() || blockState_2.useShapeForLightOcclusion())) {
-+                ProfilerFiller profiler = getProfiler();
-+                profiler.push("queueCheckLight");
++                //ProfilerFiller profiler = getProfiler();
++                //profiler.push("queueCheckLight");
 +                this.getChunkSource().getLightEngine().checkBlock(blockPos_1);
-+                profiler.pop();
++                //profiler.pop();
 +            }
 +
 +            if (blockState_3 == blockState_1) {
