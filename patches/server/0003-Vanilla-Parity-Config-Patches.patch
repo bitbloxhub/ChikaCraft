@@ -52,10 +52,10 @@ index 4532f3a0d74feae0a1249b53e1bfbc18a8808b32..a7368f053920e9dc438b814efac7c08c
          public float maxLeashDistance = 10f;
          public boolean disableSprintInterruptionOnAttack = false;
 diff --git a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
-index 4cd080a0db99a5c36394bcf54526b96fe22a206a..c100047bc68c15feee0d5f8be1738909d1fdc22c 100644
+index c0c4742027217d5ae27843989ad18be93608496a..685374827da854813a3b030412a25498e76dd11c 100644
 --- a/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
 +++ b/src/main/java/org/purpurmc/purpur/PurpurWorldConfig.java
-@@ -924,7 +924,7 @@ public class PurpurWorldConfig {
+@@ -936,7 +936,7 @@ public class PurpurWorldConfig {
          furnaceUseLavaFromUnderneath = getBoolean("blocks.furnace.use-lava-from-underneath", furnaceUseLavaFromUnderneath);
      }
  
@@ -64,7 +64,7 @@ index 4cd080a0db99a5c36394bcf54526b96fe22a206a..c100047bc68c15feee0d5f8be1738909
      private void endPortalSettings() {
          endPortalSafeTeleporting = getBoolean("blocks.end_portal.safe-teleporting", endPortalSafeTeleporting);
      }
-@@ -992,7 +992,7 @@ public class PurpurWorldConfig {
+@@ -1004,7 +1004,7 @@ public class PurpurWorldConfig {
          }
      }
  

@@ -8,10 +8,10 @@ down with yml
 you dont compile .jva files into .cls files, so why are yaml files .yml? because people arent smart, duh.
 
 diff --git a/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java b/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
-index d7ac5d5bb6180f97706be9c5ef25956f244bc376..8ea6db102acb4933f04359d1080c8e3199884f95 100644
+index 600917c8887e72553884d328f6b73817590b46b6..2d08feb0a1d2a2a1de2ccf1ff4bcb7ec950f06f7 100644
 --- a/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
 +++ b/src/main/java/org/bukkit/plugin/java/JavaPluginLoader.java
-@@ -175,10 +175,15 @@ public final class JavaPluginLoader implements PluginLoader {
+@@ -167,10 +167,15 @@ public final class JavaPluginLoader implements PluginLoader {
          try {
              jar = new JarFile(file);
              JarEntry entry = jar.getJarEntry("plugin.yml");
