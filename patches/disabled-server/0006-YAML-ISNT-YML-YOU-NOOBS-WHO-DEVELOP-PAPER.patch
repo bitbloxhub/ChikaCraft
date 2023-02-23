@@ -1,0 +1,44 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Wed, 22 Feb 2023 09:12:18 -0800
+Subject: [PATCH] YAML ISNT YML YOU NOOBS WHO DEVELOP PAPER
+
+
+diff --git a/src/main/java/io/papermc/paper/plugin/provider/type/PluginFileType.java b/src/main/java/io/papermc/paper/plugin/provider/type/PluginFileType.java
+index 22c25dc6fdfd336f5074fa52c3a4e8128d433ccc..d1492807be95583f0bcc52a7d7113a2d3499c454 100644
+--- a/src/main/java/io/papermc/paper/plugin/provider/type/PluginFileType.java
++++ b/src/main/java/io/papermc/paper/plugin/provider/type/PluginFileType.java
+@@ -33,14 +33,32 @@ public abstract class PluginFileType<T, C extends PluginMeta> {
+             entrypointHandler.register(Entrypoint.PLUGIN, parent.createPluginProvider(bootstrapPluginProvider));
+         }
+     };
++    public static final PluginFileType<PaperPluginParent, PaperPluginMeta> PAPER_YAML = new PluginFileType<>("paper-plugin.yaml", PaperPluginParent.FACTORY) {
++        @Override
++        protected void register(EntrypointHandler entrypointHandler, PaperPluginParent parent) {
++            PaperPluginParent.PaperBootstrapProvider bootstrapPluginProvider = null;
++            if (parent.shouldCreateBootstrap()) {
++                bootstrapPluginProvider = parent.createBootstrapProvider();
++                entrypointHandler.register(Entrypoint.BOOTSTRAPPER, bootstrapPluginProvider);
++            }
++
++            entrypointHandler.register(Entrypoint.PLUGIN, parent.createPluginProvider(bootstrapPluginProvider));
++        }
++    };
+     public static final PluginFileType<SpigotPluginProvider, PluginDescriptionFile> SPIGOT = new PluginFileType<>("plugin.yml", SpigotPluginProvider.FACTORY) {
+         @Override
+         protected void register(EntrypointHandler entrypointHandler, SpigotPluginProvider provider) {
+             entrypointHandler.register(Entrypoint.PLUGIN, provider);
+         }
+     };
++    public static final PluginFileType<SpigotPluginProvider, PluginDescriptionFile> SPIGOT_YAML = new PluginFileType<>("plugin.yaml", SpigotPluginProvider.FACTORY) {
++        @Override
++        protected void register(EntrypointHandler entrypointHandler, SpigotPluginProvider provider) {
++            entrypointHandler.register(Entrypoint.PLUGIN, provider);
++        }
++    };
+ 
+-    private static final List<PluginFileType<?, ?>> VALUES = List.of(PAPER, SPIGOT);
++    private static final List<PluginFileType<?, ?>> VALUES = List.of(PAPER, SPIGOT, PAPER_YAML, SPIGOT_YAML);
+ 
+     private final String config;
+     private final PluginTypeFactory<T, C> factory;
