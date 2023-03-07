@@ -27,7 +27,7 @@ index f25c0557cf984b97e0ab361f579eccbf46f82170..d8efd9a7918e203f839aac29b4ead27a
              "Specification-Title" to "Bukkit",
              "Specification-Version" to project.version,
 diff --git a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
-index fba5dbdb7bcbb55400ef18342c9b54612972a718..cdcae9814f913ed6cffbb30411ddc1a38215e780 100644
+index fba5dbdb7bcbb55400ef18342c9b54612972a718..b482152ec54e255b63055c34d59fb00f0d20b72e 100644
 --- a/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
 +++ b/src/main/java/com/destroystokyo/paper/PaperVersionFetcher.java
 @@ -33,8 +33,8 @@ public class PaperVersionFetcher implements VersionFetcher {
@@ -45,7 +45,7 @@ index fba5dbdb7bcbb55400ef18342c9b54612972a718..cdcae9814f913ed6cffbb30411ddc1a3
  
      private static Component getUpdateStatusMessage(@Nonnull String repo, @Nonnull String branch, @Nonnull String versionInfo) {
          //int distance; // Purpur - use field
-+        /* // Chika start - disable jenkins/api checking
++        // /* // Chika start - disable jenkins/api checking
          try {
              int jenkinsBuild = Integer.parseInt(versionInfo);
              distance = fetchDistanceFromSiteApi(jenkinsBuild, getMinecraftVersion());
@@ -53,9 +53,9 @@ index fba5dbdb7bcbb55400ef18342c9b54612972a718..cdcae9814f913ed6cffbb30411ddc1a3
              versionInfo = versionInfo.replace("\"", "");
              distance = fetchDistanceFromGitHub(repo, branch, versionInfo);
          }
-+        */
-+        versionInfo = versionInfo.replace("\"", "");
-+        distance = fetchDistanceFromGitHub(repo, branch, versionInfo);
++        // */
++        // versionInfo = versionInfo.replace("\"", "");
++        // distance = fetchDistanceFromGitHub(repo, branch, versionInfo);
 +        // Chika end
  
          switch (distance) {

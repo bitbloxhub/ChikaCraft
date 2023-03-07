@@ -1,0 +1,60 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Thu, 23 Feb 2023 09:11:39 -0800
+Subject: [PATCH] TESTING PLEASE REMOVE
+
+
+diff --git a/src/main/java/net/minecraft/server/Main.java b/src/main/java/net/minecraft/server/Main.java
+index 066b18444e92508908dd823c8d928721e338d06d..100e5add23ecee11b2ceb7d3e6bb65ff9bd85eee 100644
+--- a/src/main/java/net/minecraft/server/Main.java
++++ b/src/main/java/net/minecraft/server/Main.java
+@@ -65,6 +65,8 @@ import com.mojang.bridge.game.PackType;
+ import java.io.InputStreamReader;
+ import java.util.concurrent.atomic.AtomicReference;
+ import net.minecraft.SharedConstants;
++
++import org.bukkit.Bukkit;
+ import org.bukkit.configuration.file.YamlConfiguration;
+ // CraftBukkit end
+ 
+@@ -105,7 +107,7 @@ public class Main {
+             */ // CraftBukkit end
+ 
+         try {
+-
++            
+             CrashReport.preload();
+             if (optionset.has("jfrProfile")) { // CraftBukkit
+                 JvmProfiler.INSTANCE.start(Environment.SERVER);
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/CommandBlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/CommandBlockEntity.java
+index 876c6c5ffb6a70347254318aeaceae8b3e936216..32f31d53e8b9c53fe8e683fcb5a95a676c8b63ea 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/CommandBlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/CommandBlockEntity.java
+@@ -1,5 +1,7 @@
+ package net.minecraft.world.level.block.entity;
+ 
++import org.bukkit.Bukkit;
++
+ import net.minecraft.commands.CommandSourceStack;
+ import net.minecraft.core.BlockPos;
+ import net.minecraft.core.Direction;
+@@ -29,6 +31,7 @@ public class CommandBlockEntity extends BlockEntity {
+ 
+         @Override
+         public void setCommand(String command) {
++            System.out.println(Bukkit.getServer().getClass().getPackage().getName().replace(".", ","));
+             super.setCommand(command);
+             CommandBlockEntity.this.setChanged();
+         }
+diff --git a/src/main/java/org/bukkit/craftbukkit/Main.java b/src/main/java/org/bukkit/craftbukkit/Main.java
+index d5c96078da4e86c202cac2b1bb75ae2a1e250141..43f872b4e5a1f48d8898f86918ee9f1ba7b4c805 100644
+--- a/src/main/java/org/bukkit/craftbukkit/Main.java
++++ b/src/main/java/org/bukkit/craftbukkit/Main.java
+@@ -10,6 +10,7 @@ import java.util.List;
+ import java.util.concurrent.TimeUnit;
+ import java.util.logging.Level;
+ import java.util.logging.Logger;
++
+ import joptsimple.OptionParser;
+ import joptsimple.OptionSet;
+ import net.minecraft.util.ExceptionCollector;
