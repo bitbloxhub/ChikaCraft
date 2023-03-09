@@ -1,0 +1,30 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Thu, 9 Mar 2023 09:27:04 -0800
+Subject: [PATCH] Movable BlockEntities WIP
+
+
+diff --git a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
+index efc1bdcaf141a2c2152173439d707f50feaaf91a..a0f76d5e1781b7d4e30e5e4741ed373ba6cf7c18 100644
+--- a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
+@@ -40,7 +40,7 @@ public abstract class BlockEntity {
+     private final BlockEntityType<?> type;
+     @Nullable
+     protected Level level;
+-    protected final BlockPos worldPosition;
++    protected BlockPos worldPosition;
+     protected boolean remove;
+     private BlockState blockState;
+ 
+@@ -317,4 +317,10 @@ public abstract class BlockEntity {
+         return this.persistentLore;
+     }
+     // Purpur end
++
++    // Chika start - movableBlockEntities
++    public void setCMPos(BlockPos newPos) {
++        worldPosition = newPos;
++    }
++    // Chika end
+ }
