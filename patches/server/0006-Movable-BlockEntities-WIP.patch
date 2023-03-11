@@ -4,6 +4,20 @@ Date: Thu, 9 Mar 2023 09:27:04 -0800
 Subject: [PATCH] Movable BlockEntities WIP
 
 
+diff --git a/src/main/java/chikacraft/ChikaWorldConfig.java b/src/main/java/chikacraft/ChikaWorldConfig.java
+index 2274c544bae0790ed2ff3ecff931f757d289f75c..ce20a6dce540d161b264e201921a8112413b9285 100644
+--- a/src/main/java/chikacraft/ChikaWorldConfig.java
++++ b/src/main/java/chikacraft/ChikaWorldConfig.java
+@@ -90,7 +90,9 @@ public class ChikaWorldConfig {
+     }
+ 
+     public boolean mechanicRenewableSponges = false;
++    public boolean mechanicMovableBlockEntities = false;
+     private void mechanicsSettings() {
+         mechanicRenewableSponges = getBoolean("settings.mechanics.renewablesponges", mechanicRenewableSponges);
++        mechanicMovableBlockEntities = getBoolean("settings.mechanics.movableblockentities", mechanicMovableBlockEntities);
+     }
+ }
 diff --git a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
 index efc1bdcaf141a2c2152173439d707f50feaaf91a..a0f76d5e1781b7d4e30e5e4741ed373ba6cf7c18 100644
 --- a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
@@ -25,6 +39,130 @@ index efc1bdcaf141a2c2152173439d707f50feaaf91a..a0f76d5e1781b7d4e30e5e4741ed373b
 +    // Chika start - movableBlockEntities
 +    public void setCMPos(BlockPos newPos) {
 +        worldPosition = newPos;
++    }
++    // Chika end
+ }
+diff --git a/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java b/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
+index 79bf9c277fe98df176113de39360fb34ad917577..3ed780f7335fb6ebd9843a0aeb0cda0b89270884 100644
+--- a/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
++++ b/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
+@@ -40,6 +40,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
+ import net.minecraft.world.level.block.entity.BlockEntityTicker;
+ import net.minecraft.world.level.block.entity.BlockEntityType;
+ import net.minecraft.world.level.block.entity.TickingBlockEntity;
++import net.minecraft.world.level.block.piston.MovingPistonBlock;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.gameevent.EuclideanGameEventListenerRegistry;
+ import net.minecraft.world.level.gameevent.GameEventListener;
+@@ -612,7 +613,7 @@ public class LevelChunk extends ChunkAccess {
+                     }
+ 
+                     if (iblockdata.hasBlockEntity()) {
+-                        BlockEntity tileentity = this.getBlockEntity(blockposition, LevelChunk.EntityCreationType.CHECK);
++                        BlockEntity tileentity = ifGetBlockEntity(blockposition, LevelChunk.EntityCreationType.CHECK);
+ 
+                         if (tileentity == null) {
+                             tileentity = ((EntityBlock) block).newBlockEntity(blockposition, iblockdata);
+@@ -1361,4 +1362,102 @@ public class LevelChunk extends ChunkAccess {
+             return "Level ticker for " + s + "@" + this.getPos();
+         }
+     }
++
++    // Chika start: movable carpetentities
++    private BlockEntity ifGetBlockEntity(BlockPos blockPos_1, LevelChunk.EntityCreationType worldChunk$CreationType_1) {
++        if (!this.level.chikaConfig.mechanicMovableBlockEntities) {
++            return this.getBlockEntity(blockPos_1, LevelChunk.EntityCreationType.CHECK);
++        } else {
++            return this.level.getBlockEntity(blockPos_1);
++        }
++    }
++
++    public BlockState setBlockStateWithBlockEntity(BlockPos blockPos_1, BlockState newBlockState, BlockEntity newBlockEntity,
++            boolean boolean_1)
++    {
++        int x = blockPos_1.getX() & 15;
++        int y = blockPos_1.getY();
++        int z = blockPos_1.getZ() & 15;
++        LevelChunkSection chunkSection = this.getSection(this.getSectionIndex(y));
++        if (chunkSection.hasOnlyAir())
++        {
++            if (newBlockState.isAir())
++            {
++                return null;
++            }
++        }
++        
++        boolean boolean_2 = chunkSection.hasOnlyAir();
++        BlockState oldBlockState = chunkSection.setBlockState(x, y & 15, z, newBlockState);
++        if (oldBlockState == newBlockState)
++        {
++            return null;
++        }
++        else
++        {
++            Block newBlock = newBlockState.getBlock();
++            Block oldBlock = oldBlockState.getBlock();
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING)).update(x, y, z, newBlockState);
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES)).update(x, y, z, newBlockState);
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.OCEAN_FLOOR)).update(x, y, z, newBlockState);
++            ((Heightmap) this.heightmaps.get(Heightmap.Types.WORLD_SURFACE)).update(x, y, z, newBlockState);
++            boolean boolean_3 = chunkSection.hasOnlyAir();
++            if (boolean_2 != boolean_3)
++            {
++                this.level.getChunkSource().getLightEngine().updateSectionStatus(blockPos_1, boolean_3);
++            }
++            
++            if (!this.level.isClientSide)
++            {
++                if (!(oldBlock instanceof MovingPistonBlock))//this is a movableTE special case, if condition wasn't there it would remove the blockentity that was carried for some reason
++                    oldBlockState.onRemove(this.level, blockPos_1, newBlockState, boolean_1);//this kills it
++            }
++            else if (oldBlock != newBlock && oldBlock instanceof EntityBlock)
++            {
++                this.level.removeBlockEntity(blockPos_1);
++            }
++            
++            if (chunkSection.getBlockState(x, y & 15, z).getBlock() != newBlock)
++            {
++                return null;
++            }
++            else
++            {
++                BlockEntity oldBlockEntity = null;
++                if (oldBlockState.hasBlockEntity())
++                {
++                    oldBlockEntity = this.getBlockEntity(blockPos_1, LevelChunk.EntityCreationType.CHECK);
++                    if (oldBlockEntity != null)
++                    {
++                        oldBlockEntity.setBlockState(oldBlockState);
++                        updateBlockEntityTicker(oldBlockEntity);
++                    }
++                }
++
++                if (oldBlockState.hasBlockEntity())
++                {
++                    if (newBlockEntity == null)
++                    {
++                        newBlockEntity = ((EntityBlock) newBlock).newBlockEntity(blockPos_1, newBlockState);
++                    }
++                    if (newBlockEntity != oldBlockEntity && newBlockEntity != null)
++                    {
++                        newBlockEntity.clearRemoved();
++                        this.level.setBlockEntity(newBlockEntity);
++                        newBlockEntity.setBlockState(newBlockState);
++                        updateBlockEntityTicker(newBlockEntity);
++                    }
++                }
++
++                if (!this.level.isClientSide)
++                {
++                    newBlockState.onPlace(this.level, blockPos_1, oldBlockState, boolean_1); //This can call setblockstate! (e.g. hopper does)
++                }
++                
++                this.unsaved = true; // shouldSave
++                return oldBlockState;
++            }
++        }
 +    }
 +    // Chika end
  }
