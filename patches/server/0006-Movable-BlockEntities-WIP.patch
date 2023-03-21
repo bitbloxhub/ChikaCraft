@@ -18,8 +18,102 @@ index 2274c544bae0790ed2ff3ecff931f757d289f75c..ce20a6dce540d161b264e201921a8112
 +        mechanicMovableBlockEntities = getBoolean("settings.mechanics.movableblockentities", mechanicMovableBlockEntities);
      }
  }
+diff --git a/src/main/java/net/minecraft/world/level/Level.java b/src/main/java/net/minecraft/world/level/Level.java
+index c2f54901fbb3fd0c55db9af84ddcc24a4ede27f0..b64fdf437da66b73856cd9f07efdd9ac3e04cb69 100644
+--- a/src/main/java/net/minecraft/world/level/Level.java
++++ b/src/main/java/net/minecraft/world/level/Level.java
+@@ -53,7 +53,9 @@ import net.minecraft.world.level.biome.BiomeManager;
+ import net.minecraft.world.level.block.BaseFireBlock;
+ import net.minecraft.world.level.block.Block;
+ import net.minecraft.world.level.block.Blocks;
++import net.minecraft.world.level.block.EntityBlock;
+ import net.minecraft.world.level.block.entity.BlockEntity;
++import net.minecraft.world.level.block.entity.LidBlockEntity;
+ import net.minecraft.world.level.block.entity.TickingBlockEntity;
+ import net.minecraft.world.level.block.state.BlockState;
+ import net.minecraft.world.level.border.BorderChangeListener;
+@@ -1696,4 +1698,79 @@ public abstract class Level implements LevelAccessor, AutoCloseable {
+         return getWorld().getEnvironment() == org.bukkit.World.Environment.THE_END;
+     }
+     // Purpur end
++
++    // Chika start - movableBlockEntities
++    /**
++     * @author 2No2Name
++     */
++    public boolean setBlockStateWithBlockEntity(BlockPos blockPos_1, BlockState blockState_1, BlockEntity newBlockEntity, int int_1)
++    {
++        if (isOutsideBuildHeight(blockPos_1) || !this.isClientSide && isDebug()) return false;
++        LevelChunk worldChunk_1 = this.getChunkAt(blockPos_1);
++        Block block_1 = blockState_1.getBlock();
++
++        BlockState blockState_2;
++        if (newBlockEntity != null && block_1 instanceof EntityBlock)
++        {
++            blockState_2 = ((LevelChunk) worldChunk_1).setBlockStateWithBlockEntity(blockPos_1, blockState_1, newBlockEntity, (int_1 & 64) != 0); // mabey
++            if (newBlockEntity instanceof LidBlockEntity)
++            {
++                scheduleTick(blockPos_1, block_1, 5);
++            }
++        }
++        else
++        {
++            blockState_2 = worldChunk_1.setBlockState(blockPos_1, blockState_1, (int_1 & 64) != 0);
++        }
++
++        if (blockState_2 == null)
++        {
++            return false;
++        }
++        else
++        {
++            BlockState blockState_3 = this.getBlockState(blockPos_1);
++
++            if (blockState_3 != blockState_2 && (blockState_3.getLightBlock((BlockGetter) this, blockPos_1) != blockState_2.getLightBlock((BlockGetter) this, blockPos_1) || blockState_3.getLightEmission() != blockState_2.getLightEmission() || blockState_3.useShapeForLightOcclusion() || blockState_2.useShapeForLightOcclusion()))
++            {
++                ProfilerFiller profiler = getProfiler();
++                profiler.push("queueCheckLight");
++                this.getChunkSource().getLightEngine().checkBlock(blockPos_1);
++                profiler.pop();
++            }
++
++            if (blockState_3 == blockState_1)
++            {
++                if (blockState_2 != blockState_3)
++                {
++                    this.setBlocksDirty(blockPos_1, blockState_2, blockState_3);
++                }
++
++                if ((int_1 & 2) != 0 && (!this.isClientSide || (int_1 & 4) == 0) && (this.isClientSide || worldChunk_1.getFullStatus() != null && worldChunk_1.getFullStatus().isOrAfter(ChunkHolder.FullChunkStatus.TICKING)))
++                {
++                    this.sendBlockUpdated(blockPos_1, blockState_2, blockState_1, int_1);
++                }
++
++                if (!this.isClientSide && (int_1 & 1) != 0)
++                {
++                    this.updateNeighborsAt(blockPos_1, blockState_2.getBlock());
++                    if (blockState_1.hasAnalogOutputSignal())
++                    {
++                        updateNeighbourForOutputSignal(blockPos_1, block_1);
++                    }
++                }
++
++                if ((int_1 & 16) == 0)
++                {
++                    int int_2 = int_1 & -34;
++                    blockState_2.updateIndirectNeighbourShapes(this, blockPos_1, int_2); // prepare
++                    blockState_1.updateNeighbourShapes(this, blockPos_1, int_2); // updateNeighbours
++                    blockState_1.updateIndirectNeighbourShapes(this, blockPos_1, int_2); // prepare
++                }
++                this.onBlockStateChange(blockPos_1, blockState_2, blockState_3);
++            }
++            return true;
++        }
++    }
++    // Chika end
+ }
 diff --git a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java b/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
-index efc1bdcaf141a2c2152173439d707f50feaaf91a..a0f76d5e1781b7d4e30e5e4741ed373ba6cf7c18 100644
+index e438e7e018f643d82ddf5efbf72779876c516d1a..0f6bc0bed64ddc0c027b1e661f71561a7ef15988 100644
 --- a/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
 +++ b/src/main/java/net/minecraft/world/level/block/entity/BlockEntity.java
 @@ -40,7 +40,7 @@ public abstract class BlockEntity {
@@ -41,6 +135,142 @@ index efc1bdcaf141a2c2152173439d707f50feaaf91a..a0f76d5e1781b7d4e30e5e4741ed373b
 +        worldPosition = newPos;
 +    }
 +    // Chika end
+ }
+diff --git a/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java b/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
+index f456ad8a74464414f69b616a48ee9a2c1cee4d90..57f844ba237a6382a11c0eef558fb0a87b0b111c 100644
+--- a/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
++++ b/src/main/java/net/minecraft/world/level/block/piston/PistonBaseBlock.java
+@@ -21,6 +21,7 @@ import net.minecraft.world.level.BlockGetter;
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.Block;
+ import net.minecraft.world.level.block.Blocks;
++import net.minecraft.world.level.block.CommandBlock;
+ import net.minecraft.world.level.block.DirectionalBlock;
+ import net.minecraft.world.level.block.Mirror;
+ import net.minecraft.world.level.block.Rotation;
+@@ -59,6 +60,7 @@ public class PistonBaseBlock extends DirectionalBlock {
+     protected static final VoxelShape UP_AABB = Block.box(0.0D, 0.0D, 0.0D, 16.0D, 12.0D, 16.0D);
+     protected static final VoxelShape DOWN_AABB = Block.box(0.0D, 4.0D, 0.0D, 16.0D, 16.0D, 16.0D);
+     private final boolean isSticky;
++    private ThreadLocal<List<BlockEntity>> list1_BlockEntities = new ThreadLocal<>();
+ 
+     public PistonBaseBlock(boolean sticky, BlockBehaviour.Properties settings) {
+         super(settings);
+@@ -312,7 +314,7 @@ public class PistonBaseBlock extends DirectionalBlock {
+                             return false;
+                         }
+ 
+-                        switch (state.getPistonPushReaction()) {
++                        switch (moveGrindstones(state, world)) {
+                             case BLOCK:
+                                 return false;
+                             case DESTROY:
+@@ -321,10 +323,10 @@ public class PistonBaseBlock extends DirectionalBlock {
+                                 return direction == pistonDir;
+                         }
+                     } else if ((Boolean) state.getValue(PistonBaseBlock.EXTENDED)) {
+-                        return false;
++                        return movableCMD(state, world, pos, direction, canBreak, direction); // i think.
+                     }
+ 
+-                    return !state.hasBlockEntity();
++                    return !ifHasBlockEntity(state, world);
+                 }
+             } else {
+                 return false;
+@@ -440,7 +442,8 @@ public class PistonBaseBlock extends DirectionalBlock {
+                     iblockdata1 = world.getBlockState(oldPos);
+                     map.replace(oldPos, iblockdata1);
+                 }
+-                world.setBlockEntity(MovingPistonBlock.newMovingBlockEntity(blockposition3, iblockdata2, allowDesync ? list1.get(k) : iblockdata1, dir, retract, false));
++                setBlockEntityWithCarried(world, enumdirection1, allowDesync, list1, k, blockposition3, iblockdata2); // i hate this dumb garbage and i want to disintegrate it with fire
++                //world.setBlockEntity(MovingPistonBlock.newMovingBlockEntity(blockposition3, iblockdata2, allowDesync ? list1.get(k) : iblockdata1, dir, retract, false));
+                 if (!allowDesync) {
+                     world.setBlock(oldPos, Blocks.AIR.defaultBlockState(), 2 | 4 | 16 | 1024); // set air to prevent later physics updates from seeing this block
+                 }
+@@ -492,7 +495,7 @@ public class PistonBaseBlock extends DirectionalBlock {
+                 iblockdata1.updateIndirectNeighbourShapes(world, blockposition5, 2);
+                 world.updateNeighborsAt(blockposition5, iblockdata1.getBlock());
+             }
+-
++            onMove(world, list2, list1); // i think??????????????????????????????????????????? if this breaks im going to yell a lot at it. 
+             for (l = list.size() - 1; l >= 0; --l) {
+                 world.updateNeighborsAt((BlockPos) list.get(l), aiblockdata[j++].getBlock());
+             }
+@@ -529,4 +532,74 @@ public class PistonBaseBlock extends DirectionalBlock {
+     public boolean isPathfindable(BlockState state, BlockGetter world, BlockPos pos, PathComputationType type) {
+         return false;
+     }
++    // chika carpet.
++    private static boolean movableCMD(BlockState blockState_1, Level world_1, BlockPos blockPos_1,
++            Direction direction_1, boolean boolean_1, Direction direction_2)
++    {
++        Block block_1 = blockState_1.getBlock();
++        //Make CommandBlocks movable, either use instanceof CommandBlock or the 3 cmd block objects,
++        if (world_1.chikaConfig.mechanicMovableBlockEntities && block_1 instanceof CommandBlock)
++        {
++            return true;
++        }
++        return false; // i think????. i hate mixins
++    }
++
++    private static boolean isPushableBlockEntity(Block block)
++    {
++        //Making PISTON_EXTENSION (BlockPistonMoving) pushable would not work as its createNewTileEntity()-method returns null
++        return block != Blocks.ENDER_CHEST && block != Blocks.ENCHANTING_TABLE &&
++                       block != Blocks.END_GATEWAY && block != Blocks.END_PORTAL && block != Blocks.MOVING_PISTON  &&
++                       block != Blocks.SPAWNER;
++    }
++
++    private static boolean ifHasBlockEntity(BlockState blockState, Level level)
++    {
++        if (!blockState.hasBlockEntity())
++        {
++            return false;
++        }
++        else
++        {
++            return !(level.chikaConfig.mechanicMovableBlockEntities && isPushableBlockEntity(blockState.getBlock()));
++        }
++    }
++
++    private static PushReaction moveGrindstones(BlockState blockState, Level level)
++    {
++        if (level.chikaConfig.mechanicMovableBlockEntities && blockState.getBlock() == Blocks.GRINDSTONE) return PushReaction.NORMAL;
++        return blockState.getPistonPushReaction();
++    }
++
++    private void onMove(Level world_1, List<BlockPos> list_1, List<BlockState> list_2)
++    {
++        //Get the blockEntities and remove them from the world before any magic starts to happen
++        if (world_1.chikaConfig.mechanicMovableBlockEntities)
++        {
++            list1_BlockEntities.set(Lists.newArrayList());
++            for (int i = 0; i < list_1.size(); ++i)
++            {
++                BlockPos blockpos = list_1.get(i);
++                BlockEntity blockEntity = (list_2.get(i).hasBlockEntity()) ? world_1.getBlockEntity(blockpos) : null;
++                list1_BlockEntities.get().add(blockEntity);
++                if (blockEntity != null)
++                {
++                    //hopefully this call won't have any side effects in the future, such as dropping all the BlockEntity's items
++                    //we want to place this same(!) BlockEntity object into the world later when the movement stops again
++                    world_1.removeBlockEntity(blockpos);
++                    blockEntity.setChanged();
++                }
++            }
++        }
++    }
++
++    private void setBlockEntityWithCarried(Level world_1, Direction direction_1, boolean boolean_1, List<BlockState> list_2, int int_3, BlockPos blockPos_4, BlockState blockState4)
++    {
++        BlockEntity blockEntityPiston = MovingPistonBlock.newMovingBlockEntity(blockPos_4, blockState4, list_2.get(int_3),
++                direction_1, boolean_1, false);
++        if (world_1.chikaConfig.mechanicMovableBlockEntities)
++            ((PistonMovingBlockEntity) blockEntityPiston).setCarriedBlockEntity(list1_BlockEntities.get().get(int_3));
++        world_1.setBlockEntity(blockEntityPiston);
++        //world_1.setBlockEntity(blockPos_4, blockEntityPiston);
++    }
  }
 diff --git a/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java b/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
 index 79bf9c277fe98df176113de39360fb34ad917577..3ed780f7335fb6ebd9843a0aeb0cda0b89270884 100644
