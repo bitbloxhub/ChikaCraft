@@ -272,6 +272,175 @@ index f456ad8a74464414f69b616a48ee9a2c1cee4d90..57f844ba237a6382a11c0eef558fb0a8
 +        //world_1.setBlockEntity(blockPos_4, blockEntityPiston);
 +    }
  }
+diff --git a/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java b/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
+index 221c5d080d55326e458c1182823d6b49224ef498..9abe2f0f5fad36c45540d0c0ad300305655fc8cf 100644
+--- a/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
++++ b/src/main/java/net/minecraft/world/level/block/piston/PistonMovingBlockEntity.java
+@@ -17,6 +17,7 @@ import net.minecraft.world.level.BlockGetter;
+ import net.minecraft.world.level.Level;
+ import net.minecraft.world.level.block.Block;
+ import net.minecraft.world.level.block.Blocks;
++import net.minecraft.world.level.block.EntityBlock;
+ import net.minecraft.world.level.block.entity.BlockEntity;
+ import net.minecraft.world.level.block.entity.BlockEntityType;
+ import net.minecraft.world.level.block.state.BlockState;
+@@ -43,6 +44,10 @@ public class PistonMovingBlockEntity extends BlockEntity {
+     private float progressO;
+     private long lastTicked;
+     private int deathTicks;
++    private BlockEntity carriedBlockEntity;
++    private boolean renderCarriedBlockEntity = false;
++    private boolean renderSet = false;
++
+ 
+     public PistonMovingBlockEntity(BlockPos pos, BlockState state) {
+         super(BlockEntityType.PISTON, pos, state);
+@@ -269,11 +274,11 @@ public class PistonMovingBlockEntity extends BlockEntity {
+                     blockState = Block.updateFromNeighbourShapes(this.movedState, this.level, this.worldPosition);
+                 }
+ 
+-                this.level.setBlock(this.worldPosition, blockState, 3);
++                movableTEsetBlockState1(this.level, this.worldPosition, blockState, 3); // arrg
+                 this.level.neighborChanged(this.worldPosition, blockState.getBlock(), this.worldPosition);
+             }
+         }
+-
++        finishHandleBroken(); // chika
+     }
+ 
+     public static void tick(Level world, BlockPos pos, BlockState state, PistonMovingBlockEntity blockEntity) {
+@@ -288,14 +293,14 @@ public class PistonMovingBlockEntity extends BlockEntity {
+                 if (world.getBlockState(pos).is(Blocks.MOVING_PISTON)) {
+                     BlockState blockState = Block.updateFromNeighbourShapes(blockEntity.movedState, world, pos);
+                     if (blockState.isAir()) {
+-                        world.setBlock(pos, blockEntity.movedState, io.papermc.paper.configuration.GlobalConfiguration.get().unsupportedSettings.allowPistonDuplication ? 84 : (84 | 2)); // Paper - force notify (flag 2), it's possible the set type by the piston block (which doesn't notify) set this block to air
++                        movableTEsetBlockState0(world, pos, blockEntity.movedState, io.papermc.paper.configuration.GlobalConfiguration.get().unsupportedSettings.allowPistonDuplication ? 84 : (84 | 2), blockEntity); // Paper - force notify (flag 2), it's possible the set type by the piston block (which doesn't notify) set this block to air // chika garbage
+                         Block.updateOrDestroy(blockEntity.movedState, blockState, world, pos, 3);
+                     } else {
+                         if (blockState.hasProperty(BlockStateProperties.WATERLOGGED) && blockState.getValue(BlockStateProperties.WATERLOGGED)) {
+                             blockState = blockState.setValue(BlockStateProperties.WATERLOGGED, Boolean.valueOf(false));
+                         }
+ 
+-                        world.setBlock(pos, blockState, 67);
++                        movableTEsetBlockState0(world, pos, blockState, 67, blockEntity);
+                         world.neighborChanged(pos, blockState.getBlock(), pos);
+                     }
+                 }
+@@ -323,6 +328,7 @@ public class PistonMovingBlockEntity extends BlockEntity {
+         this.progressO = this.progress;
+         this.extending = nbt.getBoolean("extending");
+         this.isSourcePiston = nbt.getBoolean("source");
++        onFromTag(nbt); // chika
+     }
+ 
+     @Override
+@@ -333,6 +339,7 @@ public class PistonMovingBlockEntity extends BlockEntity {
+         nbt.putFloat("progress", this.progressO);
+         nbt.putBoolean("extending", this.extending);
+         nbt.putBoolean("source", this.isSourcePiston);
++        onToTag(nbt); // chika
+     }
+ 
+     public VoxelShape getCollisionShape(BlockGetter world, BlockPos pos) {
+@@ -372,6 +379,98 @@ public class PistonMovingBlockEntity extends BlockEntity {
+         if (world.holderLookup(Registries.BLOCK).get(this.movedState.getBlock().builtInRegistryHolder().key()).isEmpty()) {
+             this.movedState = Blocks.AIR.defaultBlockState();
+         }
++        if (carriedBlockEntity != null) carriedBlockEntity.setLevel(world);
++    }
++
++    // chika carpet garbgae
++    public BlockEntity getCarriedBlockEntity()
++    {
++        return carriedBlockEntity;
++    }
++
++    public void setCarriedBlockEntity(BlockEntity blockEntity)
++    {
++        this.carriedBlockEntity = blockEntity;
++        if (this.carriedBlockEntity != null)
++        {
++            carriedBlockEntity.setCMPos(worldPosition);
++            // this might be little dangerous since pos is final for a hashing reason?
++            if (level != null) carriedBlockEntity.setLevel(level);
++        }
++        //    this.carriedBlockEntity.setPos(this.pos);
++    }
++    
++    public boolean isRenderModeSet()
++    {
++        return renderSet;
++    }
++    
++    public boolean getRenderCarriedBlockEntity()
++    {
++        return renderCarriedBlockEntity;
++    }
++    
++    public void setRenderCarriedBlockEntity(boolean b)
++    {
++        renderCarriedBlockEntity = b;
++        renderSet = true;
++    }
+ 
++    private static boolean movableTEsetBlockState0(Level world, BlockPos blockPos_1, BlockState blockAState_2, int int_1, PistonMovingBlockEntity pistonBlockEntity)
++    {
++        if (!world.chikaConfig.mechanicMovableBlockEntities)
++            return world.setBlock(blockPos_1, blockAState_2, int_1);
++        else
++            return world.setBlockStateWithBlockEntity(blockPos_1, blockAState_2, pistonBlockEntity.getCarriedBlockEntity(), int_1);
++    }
++
++    private boolean movableTEsetBlockState1(Level world, BlockPos blockPos_1, BlockState blockState_2, int int_1)
++    {
++        if (!world.chikaConfig.mechanicMovableBlockEntities)
++            return world.setBlock(blockPos_1, blockState_2, int_1);
++        else
++        {
++            boolean ret = world.setBlockStateWithBlockEntity(blockPos_1, blockState_2, this.carriedBlockEntity, int_1);
++            this.carriedBlockEntity = null; //this will cancel the finishHandleBroken
++            return ret;
++        }
++    }
++
++    private void finishHandleBroken()
++    {
++        //Handle TNT Explosions or other ways the moving Block is broken
++        //Also /setblock will cause this to be called, and drop e.g. a moving chest's contents.
++        // This is MC-40380 (BlockEntities that aren't Inventories drop stuff when setblock is called )
++        if (this.level.chikaConfig.mechanicMovableBlockEntities && this.carriedBlockEntity != null && !this.level.isClientSide && this.level.getBlockState(this.worldPosition).getBlock() == Blocks.AIR)
++        {
++            BlockState blockState_2;
++            if (this.isSourcePiston)
++                blockState_2 = Blocks.AIR.defaultBlockState();
++            else
++                blockState_2 = Block.updateFromNeighbourShapes(this.movedState, this.level, this.worldPosition);
++            this.level.setBlockStateWithBlockEntity(this.worldPosition, blockState_2, this.carriedBlockEntity, 3);
++            this.level.destroyBlock(this.worldPosition, false, null);
++        }
++    }
++
++    private void onFromTag(CompoundTag NbtCompound_1)
++    {
++        if (this.level.chikaConfig.mechanicMovableBlockEntities && NbtCompound_1.contains("carriedTileEntityCM", 10))
++        {
++            if (this.movedState.getBlock() instanceof EntityBlock)
++                this.carriedBlockEntity = ((EntityBlock) (this.movedState.getBlock())).newBlockEntity(worldPosition, movedState);//   this.world);
++            if (carriedBlockEntity != null) //Can actually be null, as BlockPistonMoving.createNewTileEntity(...) returns null
++                this.carriedBlockEntity.load(NbtCompound_1.getCompound("carriedTileEntityCM"));
++            setCarriedBlockEntity(carriedBlockEntity);
++        }
++    }
++
++    private void onToTag(CompoundTag NbtCompound_1)
++    {
++        if (this.level.chikaConfig.mechanicMovableBlockEntities && this.carriedBlockEntity != null)
++        {
++            //Leave name "carriedTileEntityCM" instead of "carriedBlockEntityCM" for upgrade compatibility with 1.13.2 movable TE
++            NbtCompound_1.put("carriedTileEntityCM", this.carriedBlockEntity.saveWithoutMetadata());
++        }
+     }
+ }
 diff --git a/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java b/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
 index 79bf9c277fe98df176113de39360fb34ad917577..3ed780f7335fb6ebd9843a0aeb0cda0b89270884 100644
 --- a/src/main/java/net/minecraft/world/level/chunk/LevelChunk.java
