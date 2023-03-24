@@ -1,0 +1,33 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: bitbloxhub <45184892+bitbloxhub@users.noreply.github.com>
+Date: Fri, 24 Mar 2023 13:06:02 -0700
+Subject: [PATCH] port crowmap
+
+
+diff --git a/src/main/java/chikacraft/ChikaWorldConfig.java b/src/main/java/chikacraft/ChikaWorldConfig.java
+index 2274c544bae0790ed2ff3ecff931f757d289f75c..d81f2c70d2076ec990200272eee34c2b7e1c1810 100644
+--- a/src/main/java/chikacraft/ChikaWorldConfig.java
++++ b/src/main/java/chikacraft/ChikaWorldConfig.java
+@@ -90,7 +90,9 @@ public class ChikaWorldConfig {
+     }
+ 
+     public boolean mechanicRenewableSponges = false;
++    public boolean mechanicPortCrowmap = false;
+     private void mechanicsSettings() {
+         mechanicRenewableSponges = getBoolean("settings.mechanics.renewablesponges", mechanicRenewableSponges);
++        mechanicPortCrowmap = getBoolean("settings.mechanics.portcrowmap", mechanicPortCrowmap);
+     }
+ }
+diff --git a/src/main/java/net/minecraft/world/item/MapItem.java b/src/main/java/net/minecraft/world/item/MapItem.java
+index 586852e347cfeb6e52d16e51b3f193e814036e81..fda3ef883ce36ac1414b640b0d8fcfad58bb5957 100644
+--- a/src/main/java/net/minecraft/world/item/MapItem.java
++++ b/src/main/java/net/minecraft/world/item/MapItem.java
+@@ -332,7 +332,7 @@ public class MapItem extends ComplexItem {
+                     worldmap.tickCarriedBy(entityhuman, stack);
+                 }
+ 
+-                if (!worldmap.locked && (selected || entity instanceof Player && ((Player) entity).getOffhandItem() == stack)) {
++                if (!worldmap.locked && (world.chikaConfig.mechanicPortCrowmap ? true : (selected || entity instanceof Player && ((Player) entity).getOffhandItem() == stack))) {
+                     this.update(world, entity, worldmap);
+                 }
+ 
